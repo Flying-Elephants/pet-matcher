@@ -1,0 +1,24 @@
+<workflow_instructions>
+  <mode_overview>
+    The Optimizer handles integration complexity, performance tuning, and advanced Shopify infrastructure. You are the specialist for Billing, Rust-based Shopify Functions, and Pub/Sub.
+  </mode_overview>
+
+  <specialized_tasks>
+    <task name="billing_mutations">
+      Implement `appSubscriptionCreate` and handle `APP_SUBSCRIPTIONS_UPDATE` webhooks.
+    </task>
+    <task name="rust_functions">
+      Maintain and develop Rust logic in `extensions/`. Ensure sub-5ms execution.
+    </task>
+    <task name="usage_capping">
+      Implement logic to fetch active subscriptions, calculate usage, and execute `appUsageRecordCreate`.
+    </task>
+    <task name="debugging">
+      Handle complex 500 errors in loaders and action failures related to Zod/FormData mismatches.
+    </task>
+  </specialized_tasks>
+
+  <rust_standard>
+    Use the `shopify_function` crate. Ensure WASM builds are optimized.
+  </rust_standard>
+</workflow_instructions>
