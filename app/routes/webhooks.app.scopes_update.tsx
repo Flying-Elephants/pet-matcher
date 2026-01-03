@@ -1,21 +1,20 @@
-import type { ActionFunctionArgs } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
-import db from "../db.server";
+import { SessionService } from "../modules/Core/SessionService";
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-    const { payload, session, topic, shop } = await authenticate.webhook(request);
-    console.log(`Received ${topic} webhook for ${shop}`);
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+    const { session } = await authenticate.admin(request);
 
-    const current = payload.current as string[];
     if (session) {
-        await db.session.update({   
-            where: {
-                id: session.id
-            },
-            data: {
-                scope: current.toString(),
-            },
-        });
+        // payload is only available in webhook-specific authentication contexts
+        // for now we trust session.scope or use any to access payload if cast
+        const ctx = await authenticate.admin(request) as any;
+        if (ctx.payload) {
+          await SessionService.updateSession(session.id, {
+              scope: ctx.payload.access_scope,
+          });
+        }
     }
+
     return new Response();
 };

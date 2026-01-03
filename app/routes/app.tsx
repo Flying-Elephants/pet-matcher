@@ -1,9 +1,28 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { Outlet, useLoaderData, useRouteError } from "react-router";
+import { Outlet, useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 
 import { authenticate } from "../shopify.server";
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      's-app-nav': { children?: React.ReactNode };
+      's-link': { children?: React.ReactNode; href?: string; target?: string };
+      's-page': { children?: React.ReactNode; heading?: string };
+      's-section': { children?: React.ReactNode; heading?: string; slot?: string };
+      's-stack': { children?: React.ReactNode; direction?: "block" | "inline"; gap?: string };
+      's-box': { children?: React.ReactNode; padding?: string; "border-width"?: string; "border-radius"?: string };
+      's-heading': { children?: React.ReactNode };
+      's-text': {
+        children?: React.ReactNode;
+        variant?: "headingLg" | "headingMd" | "bodyMd";
+        tone?: "critical" | "success";
+      };
+    }
+  }
+}
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
@@ -19,6 +38,7 @@ export default function App() {
     <AppProvider embedded apiKey={apiKey}>
       <s-app-nav>
         <s-link href="/app">Home</s-link>
+        <s-link href="/app/sync">Product Sync</s-link>
         <s-link href="/app/additional">Additional page</s-link>
       </s-app-nav>
       <Outlet />
@@ -26,10 +46,7 @@ export default function App() {
   );
 }
 
-// Shopify needs React Router to catch some thrown responses, so that their headers are included in the response.
-export function ErrorBoundary() {
-  return boundary.error(useRouteError());
-}
+export { ErrorBoundary } from "../components/ErrorBoundary";
 
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);

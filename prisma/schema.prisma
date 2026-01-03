@@ -1,13 +1,7 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
-// enough when changing adapters.
-// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   provider = "sqlite"
   url      = "file:dev.sqlite"
@@ -15,7 +9,7 @@ datasource db {
 
 model Session {
   id            String    @id
-  shop          String
+  shop          String    @unique
   state         String
   isOnline      Boolean   @default(false)
   scope         String?
@@ -31,4 +25,49 @@ model Session {
   emailVerified Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
+  plan          String    @default("FREE") // Monetization Tracking
+}
+
+model PetProfile {
+  id          String   @id @default(uuid())
+  shop        String
+  shopifyId   String   // ID of the customer in Shopify
+  name        String
+  breed       String
+  birthday    DateTime? // For Lifecycle Marketing 
+  attributes  String   // SQLite doesn't support Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([shop])      // Critical for tenant isolation performance
+  @@index([shop, breed]) // Optimization for Analytics aggregation
+}
+
+model ProductRule {
+  id          String   @id @default(uuid())
+  shop        String
+  name        String
+  priority    Int      @default(0)
+  conditions  String   // SQLite doesn't support Json
+  productIds  String   // SQLite doesn't support Json (Array)
+  isActive    Boolean  @default(true)
+
+  @@index([shop, isActive]) // Optimized for "Get Active Rules" query
+}
+
+model SyncedProduct {
+  id          String   @id // Shopify Product ID
+  shop        String
+  title       String
+  updatedAt   DateTime @updatedAt
+
+  @@index([shop])
+}
+
+model Job {
+  id          String   @id @default(uuid())
+  type        String   // "BULK_SYNC", "EMAIL_BLAST"
+  status      String   // "PENDING", "PROCESSING", "COMPLETED", "FAILED"
+  payload     String   // SQLite doesn't support Json
+  createdAt   DateTime @default(now())
 }
