@@ -12,6 +12,16 @@ export interface ProductRule {
   isActive: boolean;
 }
 
+export interface BulkOperationStatus {
+  id: string;
+  status: "CREATED" | "RUNNING" | "COMPLETED" | "CANCELLED" | "FAILED" | "EXPIRED";
+  errorCode?: string;
+  createdAt: string;
+  completedAt?: string;
+  objectCount: string;
+  url?: string;
+}
+
 export const ProductRuleService = {
   getRules: async (shop: string): Promise<ProductRule[]> => {
     return ProductRuleDb.findMany(shop);
@@ -41,7 +51,7 @@ export const ProductRuleService = {
     return BulkOperationService.deleteProduct(productId);
   },
 
-  getSyncStatus: async (admin: AdminApiContext) => {
+  getSyncStatus: async (admin: AdminApiContext): Promise<BulkOperationStatus | null> => {
     return BulkOperationService.getStatus(admin);
   }
 };

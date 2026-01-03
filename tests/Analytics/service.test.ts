@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { AnalyticsService } from "../index";
-import { AnalyticsDb } from "../internal/db";
+import { AnalyticsService } from "../../app/modules/Analytics";
+import { AnalyticsDb } from "../../app/modules/Analytics/internal/db";
 
-vi.mock("../internal/db", () => ({
+vi.mock("../../app/modules/Analytics/internal/db", () => ({
   AnalyticsDb: {
     getSummary: vi.fn(),
   },

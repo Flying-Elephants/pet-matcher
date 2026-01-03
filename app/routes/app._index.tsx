@@ -1,10 +1,22 @@
 import type { LoaderFunctionArgs, HeadersFunction } from "react-router";
 import { useLoaderData, useNavigate, useRevalidator } from "react-router";
 import { useEffect, useRef } from "react";
+import { 
+  Page, 
+  Layout, 
+  Card, 
+  Text, 
+  BlockStack, 
+  InlineStack, 
+  Box, 
+  Button, 
+  Badge 
+} from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { AnalyticsService } from "../modules/Analytics";
 import { ProductRuleService } from "../modules/ProductRules";
 import type { SummaryData } from "../modules/Analytics";
+import type { BulkOperationStatus } from "../modules/ProductRules";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -19,7 +31,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function Index() {
-  const { summary, syncStatus } = useLoaderData<typeof loader>() as { summary: SummaryData, syncStatus: any };
+  const { summary, syncStatus } = useLoaderData<typeof loader>() as { 
+    summary: SummaryData; 
+    syncStatus: BulkOperationStatus | null; 
+  };
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const isSyncing = syncStatus?.status === "RUNNING" || syncStatus?.status === "CREATED";
@@ -34,65 +49,76 @@ export default function Index() {
     return () => {
         if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
     };
-  }, [isSyncing, revalidator.state]);
+  }, [isSyncing, revalidator.state, revalidator]);
 
   return (
-    <s-page heading="Pet-Matcher Insights">
-      <s-section heading="Business Performance">
-        <s-stack direction="inline" gap="base">
-            <s-box padding="base" border-width="base" border-radius="base">
-                <s-stack direction="block" gap="base">
-                    <s-text>Total Pet Profiles</s-text>
-                    <s-text>{String(summary.totalMatches)}</s-text>
-                </s-stack>
-            </s-box>
-            <s-box padding="base" border-width="base" border-radius="base">
-                <s-stack direction="block" gap="base">
-                    <s-text>Active Product Rules</s-text>
-                    <s-text>{String(summary.activeRules)}</s-text>
-                </s-stack>
-            </s-box>
-            
-            <s-box padding="base" border-width="base" border-radius="base">
-                <s-stack direction="block" gap="base">
-                    <s-text>Product Catalog</s-text>
-                    <s-stack direction="inline" gap="small">
-                        <s-text tone={isSyncing ? "info" : "success"}>
-                            {String(summary.syncedProductsCount || 0)} Synced
-                        </s-text>
+    <Page title="Pet-Matcher Insights">
+      <Layout>
+        <Layout.Section>
+          <BlockStack gap="500">
+            <Card>
+              <BlockStack gap="400">
+                <Text as="h2" variant="headingMd">Business Performance</Text>
+                <InlineStack gap="400" align="start">
+                  <Box padding="400" borderWidth="025" borderColor="border" borderRadius="200">
+                    <BlockStack gap="200">
+                      <Text as="p" variant="bodyMd">Total Pet Profiles</Text>
+                      <Text as="p" variant="headingLg">{String(summary.totalMatches)}</Text>
+                    </BlockStack>
+                  </Box>
+                  <Box padding="400" borderWidth="025" borderColor="border" borderRadius="200">
+                    <BlockStack gap="200">
+                      <Text as="p" variant="bodyMd">Active Product Rules</Text>
+                      <Text as="p" variant="headingLg">{String(summary.activeRules)}</Text>
+                    </BlockStack>
+                  </Box>
+                  <Box padding="400" borderWidth="025" borderColor="border" borderRadius="200">
+                    <BlockStack gap="200">
+                      <Text as="p" variant="bodyMd">Product Catalog</Text>
+                      <InlineStack gap="200">
+                        <Badge tone={isSyncing ? "info" : "success"}>
+                          {`${summary.syncedProductsCount || 0} Synced`}
+                        </Badge>
                         {isSyncing && (
-                            <s-text tone="neutral">(Updating...)</s-text>
+                          <Text as="p" variant="bodySm" tone="subdued">(Updating...)</Text>
                         )}
-                    </s-stack>
-                </s-stack>
-            </s-box>
-        </s-stack>
-      </s-section>
+                      </InlineStack>
+                    </BlockStack>
+                  </Box>
+                </InlineStack>
+              </BlockStack>
+            </Card>
 
-      <s-section heading="Quick Actions">
-        <s-stack direction="inline" gap="base">
-            <s-button onClick={() => navigate("/app/sync")}>
-                Sync Operations
-            </s-button>
-            <s-button onClick={() => navigate("/app/audit")}>
-                Performance Audit
-            </s-button>
-        </s-stack>
-      </s-section>
+            <Card>
+              <BlockStack gap="400">
+                <Text as="h2" variant="headingMd">Quick Actions</Text>
+                <InlineStack gap="300">
+                  <Button onClick={() => navigate("/app/sync")}>
+                    Sync Operations
+                  </Button>
+                  <Button onClick={() => navigate("/app/audit")}>
+                    Performance Audit
+                  </Button>
+                </InlineStack>
+              </BlockStack>
+            </Card>
+          </BlockStack>
+        </Layout.Section>
 
-      <s-section heading="Platform Health" slot="aside">
-          <s-stack direction="block" gap="base">
-              <s-box padding="base" border-radius="base">
-                  <s-stack direction="block" gap="base">
-                    <s-text>Status Checklist</s-text>
-                    <s-text tone="success">✓ Architecture Verified</s-text>
-                    <s-text tone="success">✓ Performance Validated</s-text>
-                    <s-text tone="success">✓ Automated Webhook Sync</s-text>
-                  </s-stack>
-              </s-box>
-          </s-stack>
-      </s-section>
-    </s-page>
+        <Layout.Section variant="oneThird">
+          <Card>
+            <BlockStack gap="400">
+              <Text as="h2" variant="headingMd">Platform Health</Text>
+              <BlockStack gap="200">
+                <Text as="p" tone="success">✓ Architecture Verified</Text>
+                <Text as="p" tone="success">✓ Performance Validated</Text>
+                <Text as="p" tone="success">✓ Automated Webhook Sync</Text>
+              </BlockStack>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+      </Layout>
+    </Page>
   );
 }
 

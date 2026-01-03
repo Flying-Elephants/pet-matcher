@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { useLoaderData, useNavigate } from "react-router";
 import { useEffect, useState } from "react";
+import { Page, Layout, Card, BlockStack, Text, Button } from "@shopify/polaris";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   return {};
@@ -28,18 +29,27 @@ export default function AuditPage() {
   }, []);
 
   return (
-    <s-page heading="Core Web Vitals Audit">
-      <s-button slot="primary-action" onClick={() => navigate("/app")}>
-          Return to Dashboard
-      </s-button>
-
-      <s-section heading="Real-Time Metrics">
-        <s-stack direction="block" gap="base">
-          <s-text>LCP: {metrics.lcp} {" (Target < 2.5s)"}</s-text>
-          <s-text>CLS: {metrics.cls} {" (Target < 0.1)"}</s-text>
-          <s-text tone="success">Status: All UI components use strict Polaris design tokens to prevent layout shift.</s-text>
-        </s-stack>
-      </s-section>
-    </s-page>
+    <Page 
+      title="Core Web Vitals Audit"
+      backAction={{ content: "Dashboard", onAction: () => navigate("/app") }}
+    >
+      <Layout>
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <Text as="h2" variant="headingMd">Real-Time Metrics</Text>
+              <BlockStack gap="200">
+                <Text as="p">LCP: <Text as="span" fontWeight="bold">{metrics.lcp}</Text> {" (Target < 2.5s)"}</Text>
+                <Text as="p">CLS: <Text as="span" fontWeight="bold">{metrics.cls}</Text> {" (Target < 0.1)"}</Text>
+                <Text as="p" tone="success">Status: All UI components use strict Polaris design tokens to prevent layout shift.</Text>
+              </BlockStack>
+              <Button onClick={() => navigate("/app")}>
+                  Return to Dashboard
+              </Button>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+      </Layout>
+    </Page>
   );
 }
