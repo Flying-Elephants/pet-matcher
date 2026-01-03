@@ -22,19 +22,23 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
   
-  const [summary, syncStatus] = await Promise.all([
+  const [summary, syncStatus, historicalData] = await Promise.all([
     AnalyticsService.getSummary(session.shop),
-    ProductRuleService.getSyncStatus(admin)
+    ProductRuleService.getSyncStatus(admin),
+    AnalyticsService.getHistoricalMatches(session.shop, 7)
   ]);
 
-  return { summary, syncStatus };
+  return { 
+    summary, 
+    syncStatus, 
+    historicalData, 
+    plan: (session as any).plan || "FREE", 
+    matchCount: (session as any).matchCount || 0 
+  };
 };
 
 export default function Index() {
-  const { summary, syncStatus } = useLoaderData<typeof loader>() as { 
-    summary: SummaryData; 
-    syncStatus: BulkOperationStatus | null; 
-  };
+  const { summary, syncStatus, historicalData, plan, matchCount } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const isSyncing = syncStatus?.status === "RUNNING" || syncStatus?.status === "CREATED";
@@ -70,6 +74,12 @@ export default function Index() {
                     <BlockStack gap="200">
                       <Text as="p" variant="bodyMd">Active Product Rules</Text>
                       <Text as="p" variant="headingLg">{String(summary.activeRules)}</Text>
+                    </BlockStack>
+                  </Box>
+                  <Box padding="400" borderWidth="025" borderColor="border" borderRadius="200">
+                    <BlockStack gap="200">
+                      <Text as="p" variant="bodyMd">Current Plan: {plan}</Text>
+                      <Text as="p" variant="headingLg">{matchCount} / 50</Text>
                     </BlockStack>
                   </Box>
                   <Box padding="400" borderWidth="025" borderColor="border" borderRadius="200">

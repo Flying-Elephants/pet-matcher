@@ -12,5 +12,22 @@ export const SessionService = {
       where: { id },
       data,
     });
+  },
+
+  async getSessionByShop(shop: string) {
+    if (!shop) return null;
+    return db.session.findUnique({
+      where: { shop },
+    });
+  },
+
+  async incrementMatchCount(shop: string) {
+    if (!shop) return;
+    return db.session.update({
+      where: { shop },
+      data: {
+        matchCount: { increment: 1 }
+      }
+    });
   }
 };

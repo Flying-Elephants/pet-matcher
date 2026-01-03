@@ -26,6 +26,7 @@ model Session {
   refreshToken        String?
   refreshTokenExpires DateTime?
   plan          String    @default("FREE") // Monetization Tracking
+  matchCount    Int       @default(0)      // Monthly usage tracking
 }
 
 model PetProfile {
@@ -70,4 +71,15 @@ model Job {
   status      String   // "PENDING", "PROCESSING", "COMPLETED", "FAILED"
   payload     String   // SQLite doesn't support Json
   createdAt   DateTime @default(now())
+}
+
+model MatchEvent {
+  id        String   @id @default(uuid())
+  shop      String
+  profileId String
+  ruleId    String
+  createdAt DateTime @default(now())
+
+  @@index([shop])
+  @@index([shop, createdAt])
 }

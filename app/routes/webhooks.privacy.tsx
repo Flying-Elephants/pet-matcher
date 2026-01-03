@@ -1,6 +1,8 @@
 import type { ActionFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
 import { ProductRuleService } from "../modules/ProductRules";
+import { PetProfileService } from "../modules/PetProfiles";
+import { SessionService } from "../modules/Core/SessionService";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { topic, shop, payload, admin } = await authenticate.webhook(request);
@@ -22,13 +24,22 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         await ProductRuleService.removeProduct(deletedId);
         break;
     case "CUSTOMERS_REDACT":
-      // Handle customer data redaction
+      console.log(`GDPR: Redacting customer data for shop ${shop}`);
+      const customerId = (payload as any).customer?.id;
+      if (customerId) {
+        await PetProfileService.deleteCustomerData(shop, String(customerId));
+      }
       break;
     case "SHOP_REDACT":
-      // Handle shop data redaction
+      console.log(`GDPR: Redacting shop data for ${shop}`);
+      await Promise.all([
+        PetProfileService.deleteShopData(shop),
+        SessionService.deleteSessions(shop)
+      ]);
       break;
     case "CUSTOMERS_DATA_REQUEST":
-      // Handle customer data request
+      console.log(`GDPR: Customer data request for shop ${shop}`);
+      // Typically returns 200 and processes out-of-band if needed
       break;
   }
 

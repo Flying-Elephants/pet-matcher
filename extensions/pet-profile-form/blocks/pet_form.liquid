@@ -1,0 +1,239 @@
+<div class="pet-profile-container" data-customer-id="{{ customer.id }}">
+  {% if request.design_mode %}
+    <div class="design-mode-preview" style="background: #f4f4f4; padding: 10px; border: 1px dashed #999; margin-bottom: 20px;">
+      <p><strong>Editor Preview:</strong> This form will appear for logged-in customers.</p>
+    </div>
+  {% endif %}
+  {% if customer or request.design_mode %}
+    <h2>Your Pet Profiles</h2>
+    <div id="pet-profile-list">
+      <p>Loading your pets...</p>
+    </div>
+
+    <hr>
+
+    <div id="pet-profile-form-container">
+      <h3 id="form-title">Add a New Pet</h3>
+      <form id="pet-profile-form">
+        <input type="hidden" name="intent" id="form-intent" value="create">
+        <input type="hidden" name="id" id="form-pet-id" value="">
+        
+        <div class="field">
+          <label for="pet-name">Pet Name</label>
+          <input type="text" id="pet-name" name="name" required placeholder="Fido">
+        </div>
+
+        <div class="field">
+          <label for="pet-breed">Breed</label>
+          <input type="text" id="pet-breed" name="breed" required placeholder="Golden Retriever">
+        </div>
+
+        <div class="field">
+          <label for="pet-birthday">Birthday (Optional)</label>
+          <input type="date" id="pet-birthday" name="birthday">
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="form-submit-btn" class="button">Save Pet</button>
+          <button type="button" id="form-cancel-btn" class="button button--secondary" style="display: none;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+
+    <p>Please <a href="{{ routes.account_login_url }}">log in</a> to manage your pet profiles.</p>
+</div>
+
+
+<script>
+  (function() {
+    const container = document.querySelector('.pet-profile-container');
+    if (!container) return;
+
+    const customerId = container.dataset.customerId;
+    const listContainer = document.getElementById('pet-profile-list');
+    const form = document.getElementById('pet-profile-form');
+    const formTitle = document.getElementById('form-title');
+    const formIntent = document.getElementById('form-intent');
+    const formPetId = document.getElementById('form-pet-id');
+    const formSubmitBtn = document.getElementById('form-submit-btn');
+    const formCancelBtn = document.getElementById('form-cancel-btn');
+    
+    const petNameInput = document.getElementById('pet-name');
+    const petBreedInput = document.getElementById('pet-breed');
+    const petBirthdayInput = document.getElementById('pet-birthday');
+
+    const proxyUrl = '/apps/pet-matcher-proxy/pet-profiles';
+
+    let allProfiles = [];
+
+    async function fetchProfiles() {
+      if (!customerId) {
+        if (window.Shopify && window.Shopify.designMode) {
+          listContainer.innerHTML = '<p><em>Profiles will be displayed here for logged-in customers.</em></p>';
+        }
+        return;
+      }
+      try {
+        const response = await fetch(`${proxyUrl}?logged_in_customer_id=${customerId}`);
+        const data = await response.json();
+        allProfiles = data.profiles || [];
+        renderProfiles(allProfiles);
+      } catch (e) {
+        listContainer.innerHTML = '<p>Error loading profiles.</p>';
+      }
+    }
+
+    function renderProfiles(profiles) {
+      if (profiles.length === 0) {
+        listContainer.innerHTML = '<p>No pets found. Add one below!</p>';
+        return;
+      }
+
+      listContainer.innerHTML = profiles.map(profile => {
+        const birthdayStr = profile.birthday ? new Date(profile.birthday).toLocaleDateString() : 'N/A';
+        return `
+          <div class="pet-item" style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="font-size: 1.1em;">${profile.name}</strong><br>
+              <small>${profile.breed} • Born: ${birthdayStr}</small>
+            </div>
+            <div class="item-actions">
+              <button onclick="editPet('${profile.id}')" class="button button--small" style="margin-right: 5px;">Edit</button>
+              <button onclick="deletePet('${profile.id}')" class="button button--small" style="color: #d72c0d; border-color: #d72c0d;">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.editPet = (id) => {
+      const profile = allProfiles.find(p => p.id === id);
+      if (!profile) return;
+
+      formTitle.textContent = 'Edit Pet Profile';
+      formIntent.value = 'update';
+      formPetId.value = id;
+      formSubmitBtn.textContent = 'Update Pet';
+      formCancelBtn.style.display = 'inline-block';
+
+      petNameInput.value = profile.name;
+      petBreedInput.value = profile.breed;
+      
+      if (profile.birthday) {
+        petBirthdayInput.value = profile.birthday.split('T')[0];
+      } else {
+        petBirthdayInput.value = '';
+      }
+
+      form.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.resetForm = () => {
+      formTitle.textContent = 'Add a New Pet';
+      formIntent.value = 'create';
+      formPetId.value = '';
+      formSubmitBtn.textContent = 'Save Pet';
+      formCancelBtn.style.display = 'none';
+      form.reset();
+    };
+
+    formCancelBtn.addEventListener('click', resetForm);
+
+    window.deletePet = async (id) => {
+      if (!confirm('Are you sure you want to delete this pet profile?')) return;
+      
+      const formData = new FormData();
+      formData.append('intent', 'delete');
+      formData.append('id', id);
+
+      await fetch(`${proxyUrl}?logged_in_customer_id=${customerId}`, {
+        method: 'POST',
+        body: formData
+      });
+      fetchProfiles();
+    };
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const intent = fd.get('intent');
+      
+      const profileData = {
+        name: fd.get('name'),
+        breed: fd.get('breed'),
+        birthday: fd.get('birthday') || null,
+        attributes: {}
+      };
+
+      const submitData = new FormData();
+      submitData.append('intent', intent);
+      if (intent === 'update') {
+        submitData.append('id', fd.get('id'));
+      }
+      submitData.append('data', JSON.stringify(profileData));
+
+      try {
+        const res = await fetch(`${proxyUrl}?logged_in_customer_id=${customerId}`, {
+          method: 'POST',
+          body: submitData
+        });
+        
+        if (!res.ok) {
+          const err = await res.json();
+          alert('Error: ' + (err.error || 'Failed to save pet'));
+          return;
+        }
+
+        resetForm();
+        fetchProfiles();
+      } catch (err) {
+        alert('An unexpected error occurred.');
+      }
+    });
+
+    fetchProfiles();
+  })();
+</script>
+
+<style>
+  .pet-profile-container {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .field {
+    margin-bottom: 15px;
+  }
+  .field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  .field input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  .form-actions {
+    margin-top: 20px;
+  }
+  .button--small {
+    padding: 5px 10px;
+    font-size: 0.9em;
+  }
+  .pet-item small {
+    color: #666;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Pet Profile Form",
+  "target": "section",
+  "settings": [
+    { "type": "paragraph", "content": "Renders a pet profile management form for customers." }
+  ]
+}
+{% endschema %}
