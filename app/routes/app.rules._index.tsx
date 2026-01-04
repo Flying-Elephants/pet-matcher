@@ -25,13 +25,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function RulesIndex() {
   const { rules } = useLoaderData<typeof loader>();
-  const navigate = useNavigate();
   const submit = useSubmit();
+  const navigate = useNavigate();
 
   const emptyStateMarkup = (
     <EmptyState
       heading="Create your first product rule"
-      action={{ content: 'Create Rule', url: '/app/rules/new' }}
+      action={{ content: 'Create Rule', onAction: () => navigate('/app/rules/new') }}
       image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
     >
       <p>Target specific products based on pet types and breeds.</p>
@@ -41,7 +41,7 @@ export default function RulesIndex() {
   return (
     <Page 
       title="Product Rules" 
-      primaryAction={{ content: 'Create Rule', url: '/app/rules/new' }}
+      primaryAction={{ content: 'Create Rule', onAction: () => navigate('/app/rules/new') }}
     >
       <Layout>
         <Layout.Section>
@@ -55,7 +55,7 @@ export default function RulesIndex() {
                   return (
                     <ResourceItem
                       id={id}
-                      url={`/app/rules/${id}`}
+                      onClick={() => navigate(`/app/rules/${id}`)}
                     >
                       <InlineStack align="space-between" blockAlign="center">
                         <BlockStack gap="100">
@@ -80,7 +80,7 @@ export default function RulesIndex() {
                           </Badge>
                           <InlineStack gap="200">
                             <Button
-                              url={`/app/rules/${id}`}
+                              onClick={() => navigate(`/app/rules/${id}`)}
                             >
                               Edit
                             </Button>

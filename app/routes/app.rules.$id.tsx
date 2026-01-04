@@ -61,7 +61,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 export default function RuleDetail() {
   const { rule, settings, initialProductData } = useLoaderData<typeof loader>();
   const submit = useSubmit();
-  const navigate = useNavigate();
   const navigation = useNavigation();
 
   const [name, setName] = useState(rule?.name || "");
