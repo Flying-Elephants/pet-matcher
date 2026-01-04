@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function fetchProfiles() {
     try {
-      const response = await fetch(`/apps/pet-matcher-proxy/pet-profiles?logged_in_customer_id=${customerId}`);
+      const response = await fetch(`/apps/pet-matcher-final/pet-profiles?logged_in_customer_id=${customerId}`);
       
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formDataToSend.append('intent', intent);
         if (id) formDataToSend.append('id', id);
         formDataToSend.append('data', JSON.stringify(payload));
-        const response = await fetch(`/apps/pet-matcher-proxy/pet-profiles?logged_in_customer_id=${customerId}`, {
+        const response = await fetch(`/apps/pet-matcher-final/pet-profiles?logged_in_customer_id=${customerId}`, {
             method: 'POST',
             body: formDataToSend
         });
@@ -327,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData();
         formData.append('intent', 'set_active');
         formData.append('petId', id);
-        const response = await fetch(`/apps/pet-matcher-proxy/pet-profiles?logged_in_customer_id=${customerId}`, {
+        const response = await fetch(`/apps/pet-matcher-final/pet-profiles?logged_in_customer_id=${customerId}`, {
             method: 'POST',
             body: formData
         });
@@ -347,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData();
         formData.append('intent', 'delete');
         formData.append('id', id);
-        const response = await fetch(`/apps/pet-matcher-proxy/pet-profiles?logged_in_customer_id=${customerId}`, {
+        const response = await fetch(`/apps/pet-matcher-final/pet-profiles?logged_in_customer_id=${customerId}`, {
             method: 'POST',
             body: formData
         });

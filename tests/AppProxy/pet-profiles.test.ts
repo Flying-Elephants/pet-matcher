@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { action, loader } from "../../app/routes/proxy.pet-profiles";
+import { action, loader } from "../../app/routes/app.pet-profiles";
 import { PetProfileService } from "../../app/modules/PetProfiles";
 import {
   createMockContext,

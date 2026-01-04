@@ -16,7 +16,7 @@
 
     async function fetchMatches() {
       try {
-        const response = await fetch(`${window.Shopify.routes.root}apps/pet-matcher-proxy?logged_in_customer_id=${customerId}&product_id=gid://shopify/Product/${productId}`);
+        const response = await fetch(`/apps/pet-matcher-final/pet-profiles?logged_in_customer_id=${customerId}&product_id=gid://shopify/Product/${productId}`);
         
         if (!response.ok) throw new Error('Failed to fetch matches');
         
