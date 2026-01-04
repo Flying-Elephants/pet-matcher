@@ -5,6 +5,7 @@ export const PetProfileSchema = z.object({
   shop: z.string(),
   shopifyId: z.string(),
   name: z.string().min(1, "Name is required").max(100),
+  type: z.string().default("Dog"),
   breed: z.string().min(1, "Breed is required"),
   birthday: z.coerce.date().nullable().optional(),
   attributes: z.record(z.string(), z.any()).default({}),
@@ -27,3 +28,14 @@ export type CreatePetProfileInput = z.infer<typeof CreatePetProfileSchema>;
 export const UpdatePetProfileSchema = CreatePetProfileSchema.partial();
 
 export type UpdatePetProfileInput = z.infer<typeof UpdatePetProfileSchema>;
+
+export interface PetTypeConfig {
+  id: string;
+  label: string;
+  breeds: string[];
+}
+
+export interface PetSettings {
+  types: PetTypeConfig[];
+}
+

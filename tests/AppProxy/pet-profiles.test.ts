@@ -17,6 +17,7 @@ vi.mock("../../app/modules/PetProfiles", async (importOriginal) => {
       createProfile: vi.fn(),
       updateProfile: vi.fn(),
       deleteProfile: vi.fn(),
+      getSettings: vi.fn().mockResolvedValue({ types: [] }), // Mock getSettings
     },
     CreatePetProfileSchema: { parse: (data: any) => data }, // Mock Zod to simply return data
     UpdatePetProfileSchema: { parse: (data: any) => data }, // Mock Zod to simply return data
@@ -74,7 +75,7 @@ describe("App Proxy: proxy.pet-profiles.tsx", () => {
 
   describe("Action", () => {
     it("should handle 'create' intent successfully", async () => {
-      const mockInput = { name: "New Pet", breed: "Dog", birthday: null, attributes: {} };
+      const mockInput = { name: "New Pet", breed: "Dog", type: "Dog", birthday: null, attributes: {} };
       const createdProfile = { id: "new-id", ...mockInput };
       vi.mocked(PetProfileService.createProfile).mockResolvedValue(createdProfile as any);
 

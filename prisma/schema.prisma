@@ -34,6 +34,7 @@ model PetProfile {
   shop        String
   shopifyId   String   // ID of the customer in Shopify
   name        String
+  type        String   @default("Dog") // New field: 'Dog', 'Cat', etc.
   breed       String
   birthday    DateTime? // For Lifecycle Marketing 
   attributes  String   // SQLite doesn't support Json
@@ -42,8 +43,16 @@ model PetProfile {
   isSelected  Boolean  @default(false)
   
   @@index([shop])      // Critical for tenant isolation performance
+  @@index([shop, type]) // Optimization for type filtering
   @@index([shop, breed]) // Optimization for Analytics aggregation
   @@index([shop, shopifyId, isSelected]) // Optimized for fetching active profile
+}
+
+model PetProfileSettings {
+  id          String   @id @default(uuid())
+  shop        String   @unique
+  config      String   // JSON blob storing types and breeds tree
+  updatedAt   DateTime @updatedAt
 }
 
 model ProductRule {

@@ -1,5 +1,5 @@
 import db from "../../../db.server";
-import type { PetProfile, CreatePetProfileInput, UpdatePetProfileInput } from "../core/types";
+import type { PetProfile, CreatePetProfileInput, UpdatePetProfileInput, PetSettings } from "../core/types";
 
 export const PetProfileDb = {
   async findById(shop: string, id: string): Promise<PetProfile | null> {
@@ -83,5 +83,31 @@ export const PetProfileDb = {
     await db.petProfile.deleteMany({
       where: { shop },
     });
+    await db.petProfileSettings.deleteMany({
+      where: { shop },
+    });
   },
+
+  // Settings
+  async getSettings(shop: string): Promise<PetSettings | null> {
+    const settings = await db.petProfileSettings.findUnique({
+      where: { shop }
+    });
+    if (!settings) return null;
+    return JSON.parse(settings.config);
+  },
+
+  async upsertSettings(shop: string, settings: PetSettings): Promise<PetSettings> {
+    const result = await db.petProfileSettings.upsert({
+      where: { shop },
+      create: {
+        shop,
+        config: JSON.stringify(settings)
+      },
+      update: {
+        config: JSON.stringify(settings)
+      }
+    });
+    return JSON.parse(result.config);
+  }
 };

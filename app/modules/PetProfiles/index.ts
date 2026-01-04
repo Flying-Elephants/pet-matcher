@@ -1,7 +1,8 @@
 import { PetProfileDb } from "./internal/db";
 import { MatcherService } from "./internal/matcher";
+import { SettingsService } from "./internal/settings";
 import type { ProductRule } from "../ProductRules";
-import type { PetProfile, CreatePetProfileInput, UpdatePetProfileInput } from "./core/types";
+import type { PetProfile, CreatePetProfileInput, UpdatePetProfileInput, PetSettings } from "./core/types";
 
 export * from "./core/types";
 
@@ -44,5 +45,14 @@ export const PetProfileService = {
 
   deleteShopData: async (shop: string): Promise<void> => {
     return PetProfileDb.deleteByShop(shop);
+  },
+
+  // Settings Management
+  getSettings: async (shop: string): Promise<PetSettings> => {
+    return SettingsService.getSettings(shop);
+  },
+
+  updateSettings: async (shop: string, settings: PetSettings): Promise<PetSettings> => {
+    return SettingsService.updateSettings(shop, settings);
   }
 };

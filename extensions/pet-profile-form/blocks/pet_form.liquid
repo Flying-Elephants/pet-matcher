@@ -161,8 +161,19 @@
             </div>
 
             <div class="pp-form-group">
+               <label for="pet-type" class="pp-label">Pet Type</label>
+               <select id="pet-type" name="type" class="pp-input" required>
+                 <option value="" disabled selected>Select a pet type</option>
+                 <!-- Options populated via JS -->
+               </select>
+            </div>
+
+            <div class="pp-form-group">
               <label for="pet-breed" class="pp-label">Breed</label>
-              <input type="text" id="pet-breed" name="breed" class="pp-input" required placeholder="e.g. Golden Retriever">
+              <select id="pet-breed" name="breed" class="pp-input" required disabled>
+                <option value="" disabled selected>Select a breed</option>
+                <!-- Options populated via JS -->
+              </select>
             </div>
 
             <div class="pp-form-group">
