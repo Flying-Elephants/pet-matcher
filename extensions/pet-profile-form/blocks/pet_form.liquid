@@ -1,239 +1,417 @@
-<div class="pet-profile-container" data-customer-id="{{ customer.id }}">
+{{ 'pet-profile-form.css' | asset_url | stylesheet_tag }}
+
+{% style %}
+  .pp-container {
+    /* Color Overrides */
+    --pp-primary: {{ block.settings.color_primary }};
+    --pp-primary-hover: {{ block.settings.color_primary | color_darken: 10 }};
+    --pp-bg: {{ block.settings.color_bg }};
+    --pp-text: {{ block.settings.color_text }};
+    --pp-text-sub: {{ block.settings.color_text | color_modify: 'alpha', 0.7 }};
+    --pp-border: {{ block.settings.color_border }};
+    
+    /* Layout Overrides */
+    --pp-radius: {{ block.settings.border_radius }}px;
+    border-width: {{ block.settings.border_width }}px;
+    
+    /* Dimensions & Spacing */
+    max-width: {{ block.settings.container_width }}px;
+    padding-top: {{ block.settings.padding_top }}px;
+    padding-bottom: {{ block.settings.padding_bottom }}px;
+
+    /* Shadow Overrides */
+    {% case block.settings.shadow_depth %}
+      {% when 'none' %}
+        --pp-shadow: none;
+      {% when 'small' %}
+        --pp-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      {% when 'medium' %}
+        --pp-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+      {% when 'large' %}
+        --pp-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    {% endcase %}
+  }
+  
+  /* Grid Logic */
+  .pp-pet-grid {
+    display: grid;
+    gap: 16px;
+    /* Desktop: 1 column (list) or maybe 2? The original design was list-based. 
+       Let's keep default list on desktop for now unless requested otherwise, 
+       but mobile logic is requested. */
+  }
+
+  @media (max-width: 600px) {
+    .pp-pet-grid {
+        grid-template-columns: 1fr;
+    
+    }
+  }
+  
+  /* Apply border width to cards */
+  .pp-pet-card, .pp-summary-card, .pp-welcome-card, .pp-login-card, .pp-form-wrapper, .pp-skeleton-card {
+    border-width: {{ block.settings.border_width }}px;
+  }
+
+  /* Animation Toggle */
+  {% unless block.settings.enable_animations %}
+    .pp-view, .pp-pet-card, .pp-summary-card, .pp-button, .pp-action-btn, .pp-toast, .pp-skeleton {
+      animation: none !important;
+      transition: none !important;
+    }
+  {% endunless %}
+
+  /* Typography Overrides */
+  .pp-heading, .pp-welcome-title, .pp-login-title, .pp-summary-title {
+    font-size: {{ block.settings.heading_size }}px;
+  }
+  
+  .pp-pet-name {
+     font-size: {{ block.settings.heading_size | times: 0.7 | round }}px;
+  }
+  
+  body .pp-container {
+    font-size: {{ block.settings.text_size }}px;
+  }
+{% endstyle %}
+
+<script src="{{ 'pet-profile-form.js' | asset_url }}" defer="defer"></script>
+
+<div class="pp-container" data-customer-id="{{ customer.id }}" data-design-mode="{{ request.design_mode }}">
   {% if request.design_mode %}
-    <div class="design-mode-preview" style="background: #f4f4f4; padding: 10px; border: 1px dashed #999; margin-bottom: 20px;">
+    <div class="pp-design-preview">
       <p><strong>Editor Preview:</strong> This form will appear for logged-in customers.</p>
     </div>
   {% endif %}
+
   {% if customer or request.design_mode %}
-    <h2>Your Pet Profiles</h2>
-    <div id="pet-profile-list">
-      <p>Loading your pets...</p>
+    
+    <!-- Skeleton Loader (Visible initially to fix CLS) -->
+    <div id="pp-skeleton-loader" class="pp-skeleton">
+      <div class="pp-skeleton-card">
+        <div class="pp-skeleton-icon"></div>
+        <div class="pp-skeleton-title"></div>
+        <div class="pp-skeleton-text"></div>
+        <div class="pp-skeleton-text" style="width: 60%;"></div>
+        <div class="pp-skeleton-btn"></div>
+      </div>
+    </div>
+    
+    <!-- Welcome View (New User) -->
+    <div id="pp-welcome-view" class="pp-view" style="display: none;">
+      <div class="pp-welcome-card">
+        <div class="pp-welcome-content">
+          <div class="pp-welcome-icon">{{ block.settings.welcome_icon }}</div>
+          <h2 class="pp-welcome-title">{{ block.settings.welcome_title }}</h2>
+          <p class="pp-welcome-text">{{ block.settings.welcome_text }}</p>
+          <button id="pp-start-btn" class="pp-button pp-button--primary pp-button--large">
+            {{ block.settings.welcome_btn_text }}
+          </button>
+        </div>
+      </div>
     </div>
 
-    <hr>
+    <!-- Summary View (Returning User) -->
+    <div id="pp-summary-view" class="pp-view" style="display: none;">
+      <div class="pp-summary-card">
+        <div class="pp-summary-content">
+           <div class="pp-summary-icon">{{ block.settings.summary_icon }}</div>
+           <div class="pp-summary-text">
+             <h3 id="pp-active-pet-name" class="pp-summary-title">Loading...</h3>
+             <p id="pp-active-pet-details" class="pp-summary-subtitle"></p>
+           </div>
+        </div>
+        <button id="pp-manage-btn" class="pp-button pp-button--secondary pp-button--small">
+          {{ block.settings.manage_btn_text }}
+        </button>
+      </div>
+    </div>
 
-    <div id="pet-profile-form-container">
-      <h3 id="form-title">Add a New Pet</h3>
-      <form id="pet-profile-form">
-        <input type="hidden" name="intent" id="form-intent" value="create">
-        <input type="hidden" name="id" id="form-pet-id" value="">
-        
-        <div class="field">
-          <label for="pet-name">Pet Name</label>
-          <input type="text" id="pet-name" name="name" required placeholder="Fido">
+    <!-- Management View (Hidden by default) -->
+    <div id="pp-management-view" class="pp-view" style="display: none;">
+      <div class="pp-management-container">
+        <div class="pp-header">
+          <div class="pp-header-top">
+             <h2 class="pp-heading">{{ block.settings.manage_title }}</h2>
+             <button id="pp-close-management-btn" class="pp-close-btn" aria-label="Close management view">×</button>
+          </div>
+          <p class="pp-subheading">{{ block.settings.manage_subtitle }}</p>
         </div>
 
-        <div class="field">
-          <label for="pet-breed">Breed</label>
-          <input type="text" id="pet-breed" name="breed" required placeholder="Golden Retriever">
+        <div id="pet-profile-list" class="pp-pet-grid">
+          <div class="pp-loading">
+            <span class="pp-spinner"></span> Loading your pets...
+          </div>
         </div>
 
-        <div class="field">
-          <label for="pet-birthday">Birthday (Optional)</label>
-          <input type="date" id="pet-birthday" name="birthday">
-        </div>
+        <div class="pp-divider"></div>
 
-        <div class="form-actions">
-          <button type="submit" id="form-submit-btn" class="button">Save Pet</button>
-          <button type="button" id="form-cancel-btn" class="button button--secondary" style="display: none;">Cancel</button>
+        <div class="pp-form-wrapper">
+          <div class="pp-form-header">
+            <h3 id="form-title" class="pp-form-title">Add a New Pet</h3>
+          </div>
+          
+          <form id="pet-profile-form" class="pp-form">
+            <input type="hidden" name="intent" id="form-intent" value="create">
+            <input type="hidden" name="id" id="form-pet-id" value="">
+            
+            <div class="pp-form-group">
+              <label for="pet-name" class="pp-label">Pet Name</label>
+              <input type="text" id="pet-name" name="name" class="pp-input" required placeholder="e.g. Fido">
+            </div>
+
+            <div class="pp-form-group">
+              <label for="pet-breed" class="pp-label">Breed</label>
+              <input type="text" id="pet-breed" name="breed" class="pp-input" required placeholder="e.g. Golden Retriever">
+            </div>
+
+            <div class="pp-form-group">
+              <label for="pet-birthday" class="pp-label">Birthday <span class="pp-label-optional">(Optional)</span></label>
+              <input type="date" id="pet-birthday" name="birthday" class="pp-input">
+            </div>
+
+            <div class="pp-form-actions">
+              <button type="submit" id="form-submit-btn" class="pp-button pp-button--primary">
+                Save Pet
+              </button>
+              <button type="button" id="form-cancel-btn" class="pp-button pp-button--secondary" style="display: none;">
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
+    </div>
+
+  {% else %}
+    <!-- Login View -->
+    <div class="pp-login-view">
+      <div class="pp-login-card">
+        <div class="pp-login-icon">{{ block.settings.login_icon }}</div>
+        <h2 class="pp-login-title">{{ block.settings.login_title }}</h2>
+        <p class="pp-login-text">{{ block.settings.login_text }}</p>
+        <a href="{{ routes.account_login_url }}" class="pp-button pp-button--primary">{{ block.settings.login_btn_text }}</a>
+      </div>
     </div>
   {% endif %}
-
-    <p>Please <a href="{{ routes.account_login_url }}">log in</a> to manage your pet profiles.</p>
 </div>
 
-
-<script>
-  (function() {
-    const container = document.querySelector('.pet-profile-container');
-    if (!container) return;
-
-    const customerId = container.dataset.customerId;
-    const listContainer = document.getElementById('pet-profile-list');
-    const form = document.getElementById('pet-profile-form');
-    const formTitle = document.getElementById('form-title');
-    const formIntent = document.getElementById('form-intent');
-    const formPetId = document.getElementById('form-pet-id');
-    const formSubmitBtn = document.getElementById('form-submit-btn');
-    const formCancelBtn = document.getElementById('form-cancel-btn');
-    
-    const petNameInput = document.getElementById('pet-name');
-    const petBreedInput = document.getElementById('pet-breed');
-    const petBirthdayInput = document.getElementById('pet-birthday');
-
-    const proxyUrl = '/apps/pet-matcher-proxy/pet-profiles';
-
-    let allProfiles = [];
-
-    async function fetchProfiles() {
-      if (!customerId) {
-        if (window.Shopify && window.Shopify.designMode) {
-          listContainer.innerHTML = '<p><em>Profiles will be displayed here for logged-in customers.</em></p>';
-        }
-        return;
-      }
-      try {
-        const response = await fetch(`${proxyUrl}?logged_in_customer_id=${customerId}`);
-        const data = await response.json();
-        allProfiles = data.profiles || [];
-        renderProfiles(allProfiles);
-      } catch (e) {
-        listContainer.innerHTML = '<p>Error loading profiles.</p>';
-      }
-    }
-
-    function renderProfiles(profiles) {
-      if (profiles.length === 0) {
-        listContainer.innerHTML = '<p>No pets found. Add one below!</p>';
-        return;
-      }
-
-      listContainer.innerHTML = profiles.map(profile => {
-        const birthdayStr = profile.birthday ? new Date(profile.birthday).toLocaleDateString() : 'N/A';
-        return `
-          <div class="pet-item" style="border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <strong style="font-size: 1.1em;">${profile.name}</strong><br>
-              <small>${profile.breed} • Born: ${birthdayStr}</small>
-            </div>
-            <div class="item-actions">
-              <button onclick="editPet('${profile.id}')" class="button button--small" style="margin-right: 5px;">Edit</button>
-              <button onclick="deletePet('${profile.id}')" class="button button--small" style="color: #d72c0d; border-color: #d72c0d;">Delete</button>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    window.editPet = (id) => {
-      const profile = allProfiles.find(p => p.id === id);
-      if (!profile) return;
-
-      formTitle.textContent = 'Edit Pet Profile';
-      formIntent.value = 'update';
-      formPetId.value = id;
-      formSubmitBtn.textContent = 'Update Pet';
-      formCancelBtn.style.display = 'inline-block';
-
-      petNameInput.value = profile.name;
-      petBreedInput.value = profile.breed;
-      
-      if (profile.birthday) {
-        petBirthdayInput.value = profile.birthday.split('T')[0];
-      } else {
-        petBirthdayInput.value = '';
-      }
-
-      form.scrollIntoView({ behavior: 'smooth' });
-    };
-
-    window.resetForm = () => {
-      formTitle.textContent = 'Add a New Pet';
-      formIntent.value = 'create';
-      formPetId.value = '';
-      formSubmitBtn.textContent = 'Save Pet';
-      formCancelBtn.style.display = 'none';
-      form.reset();
-    };
-
-    formCancelBtn.addEventListener('click', resetForm);
-
-    window.deletePet = async (id) => {
-      if (!confirm('Are you sure you want to delete this pet profile?')) return;
-      
-      const formData = new FormData();
-      formData.append('intent', 'delete');
-      formData.append('id', id);
-
-      await fetch(`${proxyUrl}?logged_in_customer_id=${customerId}`, {
-        method: 'POST',
-        body: formData
-      });
-      fetchProfiles();
-    };
-
-    form?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const fd = new FormData(form);
-      const intent = fd.get('intent');
-      
-      const profileData = {
-        name: fd.get('name'),
-        breed: fd.get('breed'),
-        birthday: fd.get('birthday') || null,
-        attributes: {}
-      };
-
-      const submitData = new FormData();
-      submitData.append('intent', intent);
-      if (intent === 'update') {
-        submitData.append('id', fd.get('id'));
-      }
-      submitData.append('data', JSON.stringify(profileData));
-
-      try {
-        const res = await fetch(`${proxyUrl}?logged_in_customer_id=${customerId}`, {
-          method: 'POST',
-          body: submitData
-        });
-        
-        if (!res.ok) {
-          const err = await res.json();
-          alert('Error: ' + (err.error || 'Failed to save pet'));
-          return;
-        }
-
-        resetForm();
-        fetchProfiles();
-      } catch (err) {
-        alert('An unexpected error occurred.');
-      }
-    });
-
-    fetchProfiles();
-  })();
-</script>
-
-<style>
-  .pet-profile-container {
-    padding: 20px;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  .field {
-    margin-bottom: 15px;
-  }
-  .field label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-  }
-  .field input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  .form-actions {
-    margin-top: 20px;
-  }
-  .button--small {
-    padding: 5px 10px;
-    font-size: 0.9em;
-  }
-  .pet-item small {
-    color: #666;
-  }
-</style>
+<!-- Toast Container -->
+<div id="pp-toast-container" class="pp-toast-container"></div>
 
 {% schema %}
 {
   "name": "Pet Profile Form",
   "target": "section",
   "settings": [
-    { "type": "paragraph", "content": "Renders a pet profile management form for customers." }
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "color_primary",
+      "label": "Primary Color",
+      "default": "#008060"
+    },
+    {
+      "type": "color",
+      "id": "color_bg",
+      "label": "Background Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "color_text",
+      "label": "Text Color",
+      "default": "#202223"
+    },
+    {
+      "type": "color",
+      "id": "color_border",
+      "label": "Border Color",
+      "default": "#e1e3e5"
+    },
+    {
+      "type": "header",
+      "content": "Design & Layout"
+    },
+    {
+      "type": "range",
+      "id": "container_width",
+      "min": 400,
+      "max": 1600,
+      "step": 50,
+      "unit": "px",
+      "label": "Maximum Width",
+      "default": 800
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top Padding",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom Padding",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "label": "Border Radius",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "border_width",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "label": "Border Width",
+      "default": 1
+    },
+    {
+      "type": "select",
+      "id": "shadow_depth",
+      "label": "Shadow Depth",
+      "options": [
+        { "value": "none", "label": "None" },
+        { "value": "small", "label": "Small" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "large", "label": "Large" }
+      ],
+      "default": "small"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 16,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Heading Size",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "text_size",
+      "min": 12,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Body Text Size",
+      "default": 14
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_animations",
+      "label": "Enable animations",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Text Content"
+    },
+    {
+      "type": "paragraph",
+      "content": "--- Welcome Screen ---"
+    },
+    {
+      "type": "text",
+      "id": "welcome_icon",
+      "label": "Icon/Emoji",
+      "default": "👋"
+    },
+    {
+      "type": "text",
+      "id": "welcome_title",
+      "label": "Title",
+      "default": "Welcome to Pet Matcher!"
+    },
+    {
+      "type": "textarea",
+      "id": "welcome_text",
+      "label": "Body Text",
+      "default": "Create a profile for your furry friend to get personalized product recommendations tailored just for them."
+    },
+    {
+      "type": "text",
+      "id": "welcome_btn_text",
+      "label": "Button Text",
+      "default": "Add Your First Pet"
+    },
+    {
+      "type": "paragraph",
+      "content": "--- Login Screen ---"
+    },
+    {
+      "type": "text",
+      "id": "login_icon",
+      "label": "Icon/Emoji",
+      "default": "🔒"
+    },
+    {
+      "type": "text",
+      "id": "login_title",
+      "label": "Title",
+      "default": "Join Pet Matcher"
+    },
+    {
+      "type": "textarea",
+      "id": "login_text",
+      "label": "Body Text",
+      "default": "Log in to create profiles for your pets and unlock personalized product matches."
+    },
+    {
+      "type": "text",
+      "id": "login_btn_text",
+      "label": "Button Text",
+      "default": "Log In to Start"
+    },
+    {
+      "type": "paragraph",
+      "content": "--- Dashboard ---"
+    },
+    {
+      "type": "text",
+      "id": "summary_icon",
+      "label": "Summary Icon",
+      "default": "🐾"
+    },
+    {
+      "type": "text",
+      "id": "manage_btn_text",
+      "label": "Manage Button Text",
+      "default": "Manage Pets"
+    },
+    {
+      "type": "text",
+      "id": "manage_title",
+      "label": "Management Title",
+      "default": "My Pet Profiles"
+    },
+    {
+      "type": "textarea",
+      "id": "manage_subtitle",
+      "label": "Management Subtitle",
+      "default": "Manage your pets to get personalized recommendations."
+    }
   ]
 }
 {% endschema %}

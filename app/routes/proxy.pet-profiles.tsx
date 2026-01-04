@@ -17,8 +17,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   const profiles = await PetProfileService.getProfilesByCustomer(session.shop, customerId);
-  return new Response(JSON.stringify({ profiles }), { 
-    headers: { "Content-Type": "application/json" } 
+  const activePet = profiles.find(p => p.isSelected);
+
+  return new Response(JSON.stringify({ profiles, activePetId: activePet?.id || null }), { 
+    headers: { 
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0"
+    } 
   });
 };
 
@@ -69,6 +76,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         await PetProfileService.deleteProfile(session.shop, id);
         return new Response(JSON.stringify({ success: true }), { 
           headers: { "Content-Type": "application/json" } 
+        });
+      }
+
+      case "set_active": {
+        const petId = formData.get("petId") as string;
+        if (!petId) throw new Error("petId is required");
+
+        // Verification: Ensure the pet belongs to the logged-in customer
+        const profiles = await PetProfileService.getProfilesByCustomer(session.shop, customerId);
+        const ownsPet = profiles.some(p => p.id === petId);
+
+        if (!ownsPet) {
+          return new Response(JSON.stringify({ error: "Pet not found or unauthorized" }), { status: 403 });
+        }
+
+        await PetProfileService.setActiveProfile(session.shop, customerId, petId);
+        
+        return new Response(JSON.stringify({ activePetId: petId }), {
+          headers: { "Content-Type": "application/json" }
         });
       }
 

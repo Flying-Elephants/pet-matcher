@@ -39,9 +39,11 @@ model PetProfile {
   attributes  String   // SQLite doesn't support Json
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  isSelected  Boolean  @default(false)
   
   @@index([shop])      // Critical for tenant isolation performance
   @@index([shop, breed]) // Optimization for Analytics aggregation
+  @@index([shop, shopifyId, isSelected]) // Optimized for fetching active profile
 }
 
 model ProductRule {

@@ -53,6 +53,20 @@ export const PetProfileDb = {
     } as PetProfile;
   },
 
+  async resetActiveProfile(shop: string, customerId: string): Promise<void> {
+    await db.petProfile.updateMany({
+      where: { shop, shopifyId: customerId },
+      data: { isSelected: false },
+    });
+  },
+
+  async setActiveProfile(shop: string, id: string): Promise<void> {
+    await db.petProfile.update({
+      where: { id, shop },
+      data: { isSelected: true },
+    });
+  },
+
   async delete(shop: string, id: string): Promise<void> {
     await db.petProfile.delete({
       where: { id, shop },

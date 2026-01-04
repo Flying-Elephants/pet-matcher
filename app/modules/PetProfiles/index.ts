@@ -21,6 +21,14 @@ export const PetProfileService = {
   updateProfile: async (shop: string, id: string, data: UpdatePetProfileInput): Promise<PetProfile> => {
     return PetProfileDb.update(shop, id, data);
   },
+  
+  setActiveProfile: async (shop: string, customerId: string, petId: string): Promise<void> => {
+    // Unselect all other pets for this customer
+    await PetProfileDb.resetActiveProfile(shop, customerId);
+    
+    // Select the new pet
+    await PetProfileDb.setActiveProfile(shop, petId);
+  },
 
   deleteProfile: async (shop: string, id: string): Promise<void> => {
     return PetProfileDb.delete(shop, id);
