@@ -26,9 +26,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     const url = new URL(request.url);
     const customerId = url.searchParams.get("logged_in_customer_id");
+    const productId = url.searchParams.get("product_id");
 
     if (!customerId) {
       return jsonResponse({ error: "Customer not logged in" }, 403);
+    }
+
+    if (productId) {
+      const { profiles, matches } = await PetProfileService.getMatchesForProduct(session.shop, customerId, productId);
+      const settings = await PetProfileService.getSettings(session.shop);
+      const activePet = profiles.find(p => p.isSelected);
+
+      return jsonResponse({
+        profiles,
+        matches,
+        settings: settings || { types: [] },
+        activePetId: activePet?.id || null
+      });
     }
 
     const profiles = await PetProfileService.getProfilesByCustomer(session.shop, customerId);

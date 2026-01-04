@@ -1,16 +1,21 @@
 import db from "../../../db.server";
-import type { ProductRule } from "../index";
+import type { ProductRule, RuleConditions } from "../core/types";
 
 export const ProductRuleDb = {
   async findMany(shop: string): Promise<ProductRule[]> {
     const rules = await db.productRule.findMany({
       where: { shop },
+      orderBy: { priority: "desc" },
     });
-    return rules.map((r: any) => ({
-      ...r,
-      conditions: JSON.parse(r.conditions),
-      productIds: JSON.parse(r.productIds),
-    }));
+    return rules.map((r) => this.mapToDomain(r));
+  },
+
+  async findActive(shop: string): Promise<ProductRule[]> {
+    const rules = await db.productRule.findMany({
+      where: { shop, isActive: true },
+      orderBy: { priority: "desc" },
+    });
+    return rules.map((r) => this.mapToDomain(r));
   },
 
   async findOne(shop: string, id: string): Promise<ProductRule | null> {
@@ -18,41 +23,44 @@ export const ProductRuleDb = {
       where: { id, shop },
     });
     if (!rule) return null;
-    return {
-      ...rule,
-      conditions: JSON.parse(rule.conditions),
-      productIds: JSON.parse(rule.productIds),
-    };
+    return this.mapToDomain(rule);
   },
 
   async upsert(shop: string, data: Partial<ProductRule>): Promise<ProductRule> {
     const { id, ...rest } = data;
     const rule = await db.productRule.upsert({
       where: { id: id || "", shop },
-      update: { 
-        ...rest,
+      update: {
+        name: rest.name,
+        priority: rest.priority,
+        isActive: rest.isActive,
         conditions: rest.conditions ? JSON.stringify(rest.conditions) : undefined,
         productIds: rest.productIds ? JSON.stringify(rest.productIds) : undefined,
       },
-      create: { 
-        name: data.name || "New Rule",
+      create: {
+        id: id || undefined,
         shop,
-        conditions: JSON.stringify(data.conditions || {}),
-        productIds: JSON.stringify(data.productIds || []),
-        ...rest as any,
-        id: undefined 
+        name: rest.name || "New Rule",
+        priority: rest.priority || 0,
+        isActive: rest.isActive ?? true,
+        conditions: JSON.stringify(rest.conditions || { petTypes: [], breeds: [] }),
+        productIds: JSON.stringify(rest.productIds || []),
       },
     });
-    return {
-      ...rule,
-      conditions: JSON.parse(rule.conditions),
-      productIds: JSON.parse(rule.productIds),
-    };
+    return this.mapToDomain(rule);
   },
 
   async delete(shop: string, id: string): Promise<void> {
     await db.productRule.delete({
       where: { id, shop },
     });
+  },
+
+  mapToDomain(raw: any): ProductRule {
+    return {
+      ...raw,
+      conditions: JSON.parse(raw.conditions) as RuleConditions,
+      productIds: JSON.parse(raw.productIds) as string[],
+    };
   },
 };

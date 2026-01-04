@@ -6,8 +6,11 @@ export const AnalyticsDb = {
     const [totalMatches, activeRules, syncedProductsCount] = await Promise.all([
       db.petProfile.count({ where: { shop } }),
       db.productRule.count({ where: { shop, isActive: true } }),
-      (db as any).syncedProduct?.count({ where: { shop } }) || Promise.resolve(0),
+      db.syncedProduct.count({ where: { shop } }),
     ]);
+
+    // Added logs for debugging in production-like environment
+    console.log(`[AnalyticsDb] Summary for ${shop}:`, { totalMatches, activeRules, syncedProductsCount });
 
     return {
       totalMatches,

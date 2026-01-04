@@ -11,12 +11,15 @@ import {
   Button, 
   Box, 
   EmptyState, 
-  Badge 
+  Badge,
+  Banner,
+  ProgressBar
 } from "@shopify/polaris";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { ProductRuleService } from "../modules/ProductRules";
 import type { BulkOperationStatus } from "../modules/ProductRules";
+import { boundary } from "@shopify/shopify-app-react-router/server";
 
 interface ActionData {
   success: boolean;
@@ -115,22 +118,40 @@ export default function SyncPage() {
             </Card>
           ) : (
             <BlockStack gap="500">
+              {isRunning && (
+                <Banner title="Sync in progress" tone="info">
+                  <p>Your products are being synchronized. This process may take a few minutes depending on your catalog size.</p>
+                </Banner>
+              )}
+              
               <Card>
                 <BlockStack gap="400">
-                  <Text as="h2" variant="headingMd">Current Status</Text>
-                  <InlineStack gap="400" align="center">
-                    <Badge tone={isRunning ? "info" : status.status === "COMPLETED" ? "success" : "critical"}>
-                      {status.status}
-                    </Badge>
-                    {isRunning && (
-                      <Text as="p" variant="bodySm" tone="subdued">(Status Polling Active)</Text>
-                    )}
+                  <InlineStack align="space-between">
+                     <Text as="h2" variant="headingMd">Current Status</Text>
+                     <Badge tone={isRunning ? "info" : status.status === "COMPLETED" ? "success" : "critical"}>
+                       {status.status}
+                     </Badge>
                   </InlineStack>
+
+                  {isRunning && (
+                    <Box paddingBlock="200">
+                        <ProgressBar progress={80} tone="primary" size="small" />
+                        <Box paddingBlockStart="200">
+                            <Text as="p" variant="bodySm" tone="subdued" alignment="center">Processing...</Text>
+                        </Box>
+                    </Box>
+                  )}
                   
                   {status.objectCount && (
-                    <Text as="p" variant="bodyMd">
-                      Objects Processed: <Text as="span" fontWeight="bold">{String(status.objectCount)}</Text>
-                    </Text>
+                    <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+                      <BlockStack gap="200">
+                        <Text as="p" variant="bodyMd" fontWeight="bold">Statistics</Text>
+                        <InlineStack align="space-between">
+                           <Text as="p" variant="bodyMd">Objects Processed:</Text>
+                           <Text as="span" fontWeight="bold">{String(status.objectCount)}</Text>
+                        </InlineStack>
+                      </BlockStack>
+                    </Box>
                   )}
 
                   <Box>
@@ -139,8 +160,9 @@ export default function SyncPage() {
                       onClick={startSync}
                       loading={isSubmitting}
                       variant="primary"
+                      fullWidth
                     >
-                      {isSubmitting ? "Starting Sync..." : isRunning ? "Sync in Progress" : "Start Bulk Sync"}
+                      {isSubmitting ? "Starting Sync..." : isRunning ? "Sync in Progress" : "Start New Bulk Sync"}
                     </Button>
                   </Box>
                 </BlockStack>

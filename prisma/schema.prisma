@@ -63,6 +63,8 @@ model ProductRule {
   conditions  String   // SQLite doesn't support Json
   productIds  String   // SQLite doesn't support Json (Array)
   isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([shop, isActive]) // Optimized for "Get Active Rules" query
 }

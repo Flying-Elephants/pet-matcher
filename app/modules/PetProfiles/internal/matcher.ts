@@ -5,16 +5,6 @@ import { SessionService } from "../../Core/SessionService";
 
 export const MatcherService = {
   async match(profile: PetProfile, rules: ProductRule[]): Promise<string[]> {
-    // 1. Billing Gate
-    const session = await SessionService.getSessionByShop(profile.shop);
-    const plan = (session as any)?.plan || "FREE";
-    const matchCount = (session as any)?.matchCount || 0;
-
-    if (plan === "FREE" && matchCount >= 50) {
-      console.log(`Billing Gate: Shop ${profile.shop} has reached the free limit.`);
-      return []; // Or throw a specific error that the frontend can handle
-    }
-
     const matchedProductIds = new Set<string>();
     let matchedRuleId: string | null = null;
 
@@ -37,6 +27,26 @@ export const MatcherService = {
     }
 
     return Array.from(matchedProductIds);
+  },
+
+  async isProductMatched(profile: PetProfile, rules: ProductRule[], productId: string): Promise<boolean> {
+    // Sort rules by priority (higher number = higher priority)
+    const sortedRules = [...rules].sort((a, b) => b.priority - a.priority);
+
+    for (const rule of sortedRules) {
+      if (!rule.isActive) continue;
+
+      if (this.evaluateConditions(profile, rule.conditions)) {
+        if (rule.productIds.includes(productId)) {
+          // Side Effects: Record Analytics & Increment Billing Usage
+          AnalyticsService.recordMatch(profile.shop, profile.id, rule.id).catch(console.error);
+          SessionService.incrementMatchCount(profile.shop).catch(console.error);
+          return true;
+        }
+      }
+    }
+
+    return false;
   },
 
   evaluateConditions(profile: PetProfile, conditions: any): boolean {

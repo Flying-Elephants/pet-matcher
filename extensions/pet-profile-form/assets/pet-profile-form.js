@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', function() {
   let activePetId = null;
 
   // DOM Elements
+  const modal = {
+    trigger: document.getElementById('pp-floating-trigger'),
+    overlay: document.getElementById('pp-modal-overlay')
+  };
+
   const views = {
     skeleton: document.getElementById('pp-skeleton-loader'),
     welcome: document.getElementById('pp-welcome-view'),
@@ -34,11 +39,42 @@ document.addEventListener('DOMContentLoaded', function() {
     petBreedSelect: document.getElementById('pet-breed')
   };
 
+  // --- Modal Logic ---
+
+  function openModal() {
+    modal.overlay.style.display = 'flex';
+    document.body.classList.add('pp-modal-open');
+    if (customerId) {
+      if (profiles.length === 0) {
+        fetchProfiles();
+      } else {
+        // If we have profiles, show management view immediately for better UX in modal
+        showManagementView();
+      }
+    }
+  }
+
+  function closeModal() {
+    modal.overlay.style.display = 'none';
+    document.body.classList.remove('pp-modal-open');
+  }
+
+  if (modal.trigger) {
+    modal.trigger.addEventListener('click', openModal);
+  }
+
+  if (modal.overlay) {
+    modal.overlay.addEventListener('click', (e) => {
+      if (e.target === modal.overlay) closeModal();
+    });
+  }
+
   // --- Initialization ---
 
   if (isDesignMode) {
     showView('welcome');
-    return;
+    // In design mode, keep modal open or handle accordingly
+    if(modal.overlay) modal.overlay.style.display = 'flex';
   }
 
   if (customerId) {
@@ -46,16 +82,11 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // --- Event Listeners ---
-  console.log('PP: Attaching event listeners');
 
   if (elements.startBtn) {
-      console.log('PP: Start button found');
       elements.startBtn.addEventListener('click', () => {
-          console.log('PP: Start button clicked');
           showManagementView(true);
       });
-  } else {
-      console.warn('PP: Start button NOT found');
   }
 
   if (elements.manageBtn) elements.manageBtn.addEventListener('click', () => showManagementView());
@@ -66,7 +97,6 @@ document.addEventListener('DOMContentLoaded', function() {
     elements.form.addEventListener('submit', handleFormSubmit);
   }
 
-  // Dependent Dropdown Logic
   if (elements.petTypeSelect) {
     elements.petTypeSelect.addEventListener('change', (e) => {
         const selectedType = e.target.value;
@@ -78,20 +108,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function fetchProfiles() {
     try {
-      // Use the proxy URL to fetch data securely
-      // Proxy path is configured in shopify.app.toml as: prefix="apps", subpath="pet-matcher-proxy"
-      // Backend route is app/routes/proxy.pet-profiles.tsx which maps to /proxy/pet-profiles
-      // So the storefront URL is /apps/pet-matcher-proxy/pet-profiles
       const response = await fetch(`/apps/pet-matcher-proxy/pet-profiles?logged_in_customer_id=${customerId}`);
       
-      // Handle non-JSON responses gracefully
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         throw new Error("Received non-JSON response from server");
       }
 
       const text = await response.text();
-      const data = text ? JSON.parse(text) : {}; // Handle empty response
+      const data = text ? JSON.parse(text) : {};
 
       if (data.error) throw new Error(data.error);
 
@@ -99,8 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
       activePetId = data.activePetId;
       settings = data.settings || { types: [] };
 
-      populateTypeOptions(); // Initialize types
-
+      populateTypeOptions();
       render();
     } catch (error) {
       console.error('Error fetching pet profiles:', error);
@@ -111,7 +135,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // --- Rendering Logic ---
 
   function render() {
-    // Hide skeleton
     if (views.skeleton) views.skeleton.style.display = 'none';
 
     if (profiles.length === 0) {
@@ -126,33 +149,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const activePet = profiles.find(p => p.id === activePetId) || profiles[0];
     if (activePet) {
       elements.activePetName.textContent = activePet.name;
-      elements.activePetDetails.textContent = `${activePet.breed} • ${activePet.type || 'Dog'}`; // Fallback for old data
+      elements.activePetDetails.textContent = `${activePet.breed} • ${activePet.type || 'Dog'}`;
     }
   }
 
   function populateTypeOptions() {
       if (!elements.petTypeSelect) return;
-      
-      // Clear existing (keep default disabled option)
       elements.petTypeSelect.innerHTML = '<option value="" disabled selected>Select a pet type</option>';
-
       settings.types.forEach(type => {
           const option = document.createElement('option');
-          option.value = type.label; // Use label as value for now since DB stores string
+          option.value = type.label;
           option.textContent = type.label;
-          option.dataset.typeId = type.id;
           elements.petTypeSelect.appendChild(option);
       });
   }
 
   function updateBreedOptions(selectedTypeLabel, selectedBreed = null) {
       if (!elements.petBreedSelect) return;
-
       const typeConfig = settings.types.find(t => t.label === selectedTypeLabel);
-      
       elements.petBreedSelect.innerHTML = '<option value="" disabled selected>Select a breed</option>';
       elements.petBreedSelect.disabled = !typeConfig;
-
       if (typeConfig && typeConfig.breeds) {
           typeConfig.breeds.forEach(breed => {
               const option = document.createElement('option');
@@ -166,13 +182,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function renderPetList() {
     elements.petList.innerHTML = '';
-    
     profiles.forEach(pet => {
       const card = document.createElement('div');
       card.className = `pp-pet-card ${pet.id === activePetId ? 'pp-active' : ''}`;
-      
       const isActive = pet.id === activePetId;
-      
       card.innerHTML = `
         <div class="pp-card-content">
           <div class="pp-card-icon">🐾</div>
@@ -187,19 +200,15 @@ document.addEventListener('DOMContentLoaded', function() {
            <button type="button" class="pp-action-btn pp-delete-btn" data-id="${pet.id}">Delete</button>
         </div>
       `;
-      
       elements.petList.appendChild(card);
     });
 
-    // Add listeners to dynamic buttons
     document.querySelectorAll('.pp-select-btn').forEach(btn => {
       btn.addEventListener('click', (e) => setActivePet(e.target.dataset.id));
     });
-
     document.querySelectorAll('.pp-edit-btn').forEach(btn => {
       btn.addEventListener('click', (e) => editPet(e.target.dataset.id));
     });
-
     document.querySelectorAll('.pp-delete-btn').forEach(btn => {
         btn.addEventListener('click', (e) => deletePet(e.target.dataset.id));
     });
@@ -208,46 +217,35 @@ document.addEventListener('DOMContentLoaded', function() {
   // --- View Management ---
 
   function showView(viewName) {
-    console.log('PP: showView called for', viewName);
-    
-    // Hide all views and reset visibility class
     Object.values(views).forEach(el => {
         if(el) {
             el.style.display = 'none';
             el.classList.remove('pp-view--visible');
         }
     });
-
     const target = views[viewName];
     if (target) {
-        console.log('PP: showing view', target);
         target.style.display = 'block';
-        
-        // Add class with slight delay to trigger transition
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 target.classList.add('pp-view--visible');
             });
         });
-    } else {
-        console.error('PP: View not found', viewName);
     }
   }
 
   function showManagementView(autoFocusForm = false) {
-    console.log('PP: showManagementView called', { autoFocusForm });
     renderPetList();
     showView('management');
     if (autoFocusForm) {
         const nameInput = document.getElementById('pet-name');
-        console.log('PP: Focusing input', nameInput);
         if(nameInput) nameInput.focus();
     }
   }
 
   function closeManagementView() {
     resetForm();
-    render(); // Go back to summary or welcome
+    render();
   }
 
   // --- Form Handling ---
@@ -259,8 +257,6 @@ document.addEventListener('DOMContentLoaded', function() {
     elements.formTitle.textContent = 'Add a New Pet';
     elements.formSubmitBtn.textContent = 'Save Pet';
     elements.formCancelBtn.style.display = 'none';
-    
-    // Reset Selects
     if (elements.petBreedSelect) {
         elements.petBreedSelect.innerHTML = '<option value="" disabled selected>Select a breed</option>';
         elements.petBreedSelect.disabled = true;
@@ -270,81 +266,55 @@ document.addEventListener('DOMContentLoaded', function() {
   function editPet(id) {
     const pet = profiles.find(p => p.id === id);
     if (!pet) return;
-
     document.getElementById('form-intent').value = 'update';
     document.getElementById('form-pet-id').value = pet.id;
-    
     document.getElementById('pet-name').value = pet.name;
-    
-    // Set Type
     if (elements.petTypeSelect) {
-        elements.petTypeSelect.value = pet.type || 'Dog'; // Fallback
+        elements.petTypeSelect.value = pet.type || 'Dog';
     }
-
-    // Populate Breeds based on Type and Select Breed
     updateBreedOptions(pet.type || 'Dog', pet.breed);
-    
     if (pet.birthday) {
         document.getElementById('pet-birthday').value = pet.birthday.split('T')[0];
     }
-
     elements.formTitle.textContent = 'Edit Pet';
     elements.formSubmitBtn.textContent = 'Update Pet';
     elements.formCancelBtn.style.display = 'inline-block';
-    
-    // Scroll to form
     elements.form.scrollIntoView({ behavior: 'smooth' });
   }
 
   async function handleFormSubmit(e) {
     e.preventDefault();
-    
     const formData = new FormData(elements.form);
     const data = Object.fromEntries(formData.entries());
-    
-    // Basic Validation
     if(!data.type || !data.breed) {
         showToast('Please select both a pet type and a breed.', 'error');
         return;
     }
-
-    // Prepare payload
     const payload = {
         name: data.name,
         type: data.type,
         breed: data.breed,
         birthday: data.birthday || null
     };
-
     const intent = formData.get('intent');
     const id = formData.get('id');
-
-    // Optimistic UI Update (optional, sticking to loading state for simplicity)
     elements.formSubmitBtn.disabled = true;
     elements.formSubmitBtn.textContent = 'Saving...';
-
     try {
         const formDataToSend = new FormData();
         formDataToSend.append('intent', intent);
         if (id) formDataToSend.append('id', id);
         formDataToSend.append('data', JSON.stringify(payload));
-        
         const response = await fetch(`/apps/pet-matcher-proxy/pet-profiles?logged_in_customer_id=${customerId}`, {
             method: 'POST',
             body: formDataToSend
         });
-        
         const result = await response.json();
-        
         if (result.error) throw new Error(result.error);
-
-        // Success
-        await fetchProfiles(); // Refresh list
+        await fetchProfiles();
         resetForm();
         showToast(`Pet ${intent === 'create' ? 'added' : 'updated'} successfully!`);
-        
     } catch (error) {
-        console.error('Form submit error:', error);
         showToast(error.message || 'Something went wrong.', 'error');
     } finally {
         elements.formSubmitBtn.disabled = false;
@@ -357,17 +327,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData();
         formData.append('intent', 'set_active');
         formData.append('petId', id);
-        
         const response = await fetch(`/apps/pet-matcher-proxy/pet-profiles?logged_in_customer_id=${customerId}`, {
             method: 'POST',
             body: formData
         });
-        
         const result = await response.json();
         if (result.error) throw new Error(result.error);
-
         activePetId = id;
-        renderPetList(); // Re-render to update badges
+        renderPetList();
         showToast('Active pet updated!');
     } catch (error) {
         showToast(error.message, 'error');
@@ -376,20 +343,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function deletePet(id) {
       if(!confirm('Are you sure you want to delete this pet profile?')) return;
-
       try {
         const formData = new FormData();
         formData.append('intent', 'delete');
         formData.append('id', id);
-        
         const response = await fetch(`/apps/pet-matcher-proxy/pet-profiles?logged_in_customer_id=${customerId}`, {
             method: 'POST',
             body: formData
         });
-        
         const result = await response.json();
         if (result.error) throw new Error(result.error);
-
         await fetchProfiles();
         showToast('Pet profile deleted.');
       } catch (error) {
@@ -397,21 +360,15 @@ document.addEventListener('DOMContentLoaded', function() {
       }
   }
 
-  // --- Utilities ---
-
   function showToast(message, type = 'success') {
     const toast = document.createElement('div');
     toast.className = `pp-toast pp-toast--${type}`;
     toast.textContent = message;
-    
     elements.toastContainer.appendChild(toast);
-    
-    // Animation in
     requestAnimationFrame(() => {
         toast.style.opacity = '1';
         toast.style.transform = 'translateY(0)';
     });
-
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(100%)';

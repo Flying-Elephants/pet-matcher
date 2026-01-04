@@ -1,7 +1,7 @@
 import { PetProfileDb } from "./internal/db";
 import { MatcherService } from "./internal/matcher";
 import { SettingsService } from "./internal/settings";
-import type { ProductRule } from "../ProductRules";
+import { ProductRuleService } from "../ProductRules";
 import type { PetProfile, CreatePetProfileInput, UpdatePetProfileInput, PetSettings } from "./core/types";
 
 export * from "./core/types";
@@ -35,8 +35,24 @@ export const PetProfileService = {
     return PetProfileDb.delete(shop, id);
   },
 
-  getRecommendedProducts: async (profile: PetProfile, rules: ProductRule[]): Promise<string[]> => {
+  getRecommendedProducts: async (profile: PetProfile, rules: any[]): Promise<string[]> => {
     return MatcherService.match(profile, rules);
+  },
+
+  getMatchesForProduct: async (shop: string, customerId: string, productId: string) => {
+    const [profiles, rules] = await Promise.all([
+      PetProfileDb.findByCustomer(shop, customerId),
+      ProductRuleService.getRules(shop)
+    ]);
+
+    const matches = await Promise.all(
+      profiles.map(async (pet) => ({
+        petId: pet.id,
+        isMatched: await MatcherService.isProductMatched(pet, rules, productId)
+      }))
+    );
+
+    return { profiles, matches };
   },
 
   deleteCustomerData: async (shop: string, customerId: string): Promise<void> => {
