@@ -1,4 +1,5 @@
-import { useRouteError, isRouteErrorResponse } from "react-router";
+import { useRouteError, isRouteErrorResponse, Link } from "react-router";
+import { Page, Layout, Card, Text, BlockStack, Link as PolarisLink } from "@shopify/polaris";
 
 export function ErrorBoundary() {
   const error = useRouteError();
@@ -11,13 +12,20 @@ export function ErrorBoundary() {
   }
 
   return (
-    <s-page heading="Error">
-      <s-section heading="Something went wrong">
-        <s-stack direction="block" gap="base">
-          <s-text tone="critical">{errorMessage}</s-text>
-          <s-link href="/app">Return to Dashboard</s-link>
-        </s-stack>
-      </s-section>
-    </s-page>
+    <Page title="Error">
+      <Layout>
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <Text variant="headingMd" as="h2" tone="critical">
+                Something went wrong
+              </Text>
+              <Text as="p">{errorMessage}</Text>
+              <Link to="/app">Return to Dashboard</Link>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+      </Layout>
+    </Page>
   );
 }

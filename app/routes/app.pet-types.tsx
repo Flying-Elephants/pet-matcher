@@ -9,7 +9,6 @@ import {
   Button,
   InlineStack,
   Text,
-  Box,
   ResourceList,
   ResourceItem,
   Avatar,
@@ -18,12 +17,14 @@ import {
   FormLayout,
   EmptyState,
 } from "@shopify/polaris";
-import { PlusIcon, SaveIcon, DeleteIcon } from "@shopify/polaris-icons";
+import { PlusIcon, SaveIcon, InfoIcon } from "@shopify/polaris-icons";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { PetProfileService } from "../modules/PetProfiles";
 import type { PetSettings, PetTypeConfig } from "../modules/PetProfiles/core/types";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { PageGuide } from "../components/PageGuide";
+import { GUIDE_CONTENT } from "../modules/Core/guide-content";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -64,6 +65,7 @@ export default function PetTypesPage() {
   const [activeModal, setActiveModal] = useState(false);
   const [editingType, setEditingType] = useState<PetTypeConfig | null>(null);
   const [newBreedInput, setNewBreedInput] = useState("");
+  const [guideActive, setGuideActive] = useState(false);
 
   useEffect(() => {
     if (fetcher.data?.status === "success") {
@@ -158,13 +160,23 @@ export default function PetTypesPage() {
         icon: SaveIcon,
       }}
       secondaryActions={[
+          {
+          content: "Page Guide",
+          icon: InfoIcon,
+          onAction: () => setGuideActive(true),
+        },
         {
           content: "Add Pet Type",
           icon: PlusIcon,
           onAction: () => openModal(null),
-        },
+        }      
       ]}
     >
+      <PageGuide 
+        content={GUIDE_CONTENT.petTypes} 
+        active={guideActive} 
+        onClose={() => setGuideActive(false)} 
+      />
       <Layout>
         <Layout.Section>
           <Card padding="0">
@@ -252,7 +264,6 @@ export default function PetTypesPage() {
                   <Button onClick={addBreed} disabled={!newBreedInput.trim()}>Add</Button>
                 }
               />
-              {/* Handling Enter Key manually since TextField doesn't have onSubmit */}
               
               <InlineStack gap="200" wrap>
                 {editingType?.breeds.map((breed) => (

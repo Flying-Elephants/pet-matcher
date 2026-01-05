@@ -30,12 +30,17 @@ export const MatcherService = {
   },
 
   async isProductMatched(profile: PetProfile, rules: ProductRule[], productId: string): Promise<boolean> {
+    // Check if the product is targeted by ANY active rule
+    const activeRules = rules.filter(r => r.isActive);
+    const isTargeted = activeRules.some(r => r.productIds.includes(productId));
+
+    // Fallback: If not targeted by any active rule, it's a match
+    if (!isTargeted) return true;
+
     // Sort rules by priority (higher number = higher priority)
-    const sortedRules = [...rules].sort((a, b) => b.priority - a.priority);
+    const sortedRules = [...activeRules].sort((a, b) => b.priority - a.priority);
 
     for (const rule of sortedRules) {
-      if (!rule.isActive) continue;
-
       if (this.evaluateConditions(profile, rule.conditions)) {
         if (rule.productIds.includes(productId)) {
           // Side Effects: Record Analytics & Increment Billing Usage
@@ -56,9 +61,14 @@ export const MatcherService = {
     if (!conditions || Object.keys(conditions).length === 0) return true;
 
     for (const [key, value] of Object.entries(conditions)) {
-      if (key === "breed") {
+      if (key === "petTypes") {
+        const allowedTypes = value as string[];
+        if (allowedTypes.length > 0 && !allowedTypes.includes(profile.type)) return false;
+      }
+
+      if (key === "breeds" || key === "breed") {
         const allowedBreeds = value as string[];
-        if (!allowedBreeds.includes(profile.breed)) return false;
+        if (allowedBreeds.length > 0 && !allowedBreeds.includes(profile.breed)) return false;
       }
       
       // Breed-specific logic (Golden Retriever implies High Energy)

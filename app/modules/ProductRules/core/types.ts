@@ -28,3 +28,16 @@ export interface ProductRule {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type RuleSortKey = "name" | "priority" | "isActive" | "createdAt" | "productCount" | "petTypeCount" | "breedCount";
+
+export interface RuleSortOptions {
+  key: RuleSortKey;
+  direction: "asc" | "desc";
+}
+
+export interface RuleListOptions {
+  sort?: RuleSortOptions;
+  page?: number;
+  limit?: number;
+}

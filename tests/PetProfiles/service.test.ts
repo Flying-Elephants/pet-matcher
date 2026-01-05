@@ -21,6 +21,7 @@ const MOCK_PROFILE = {
   shop: MOCK_SHOP, 
   shopifyId: MOCK_CUSTOMER_ID, 
   name: "Buddy", 
+  type: "Dog",
   breed: "Golden Retriever",
   attributes: {},
 };
@@ -28,6 +29,7 @@ const MOCK_CREATE_INPUT = {
   shop: MOCK_SHOP, 
   shopifyId: MOCK_CUSTOMER_ID, 
   name: "New Pet", 
+  type: "Dog",
   breed: "Poodle",
   attributes: {},
 };

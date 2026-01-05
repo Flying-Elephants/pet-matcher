@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useSubmit, useNavigate, useNavigation, redirect } from "react-router";
-import { Page, Layout, Card, BlockStack, TextField, Button, InlineStack, Text, Badge, Checkbox, ResourceList, Thumbnail, ResourceItem, Box, Scrollable } from "@shopify/polaris";
+import { useLoaderData, useSubmit, useNavigate, useNavigation, redirect, useActionData } from "react-router";
+import { Page, Layout, Card, BlockStack, TextField, Button, InlineStack, Text, Badge, Checkbox, ResourceList, Thumbnail, ResourceItem, Box, Scrollable, Banner } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { ProductRuleService } from "../modules/ProductRules";
 import { PetProfileService } from "../modules/PetProfiles";
@@ -9,9 +9,22 @@ import { useState, useMemo } from "react";
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
   const { id } = params;
+  const url = new URL(request.url);
+  const copyFrom = url.searchParams.get("copyFrom");
   
   const settings = await PetProfileService.getSettings(session.shop);
-  const rule = id !== "new" ? await ProductRuleService.getRule(session.shop, id!) : null;
+  let rule = id !== "new" ? await ProductRuleService.getRule(session.shop, id!) : null;
+
+  if (id === "new" && copyFrom) {
+    const sourceRule = await ProductRuleService.getRule(session.shop, copyFrom);
+    if (sourceRule) {
+      rule = {
+        ...sourceRule,
+        id: "", // Ensure it's treated as new
+        name: `${sourceRule.name} (Copy)`,
+      };
+    }
+  }
 
   if (id !== "new" && !rule) {
     throw new Response("Not Found", { status: 404 });
@@ -50,18 +63,23 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   }
 
   const data = JSON.parse(formData.get("rule") as string);
-  await ProductRuleService.upsertRule(session.shop, {
-    ...data,
-    id: params.id === "new" ? undefined : params.id
-  });
-
-  return redirect("/app/rules");
+  try {
+    await ProductRuleService.upsertRule(session.shop, {
+      ...data,
+      id: params.id === "new" ? undefined : params.id
+    });
+    return redirect("/app/rules");
+  } catch (error: any) {
+    return { error: error.message };
+  }
 };
 
 export default function RuleDetail() {
   const { rule, settings, initialProductData } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const navigation = useNavigation();
+  const navigate = useNavigate();
 
   const [name, setName] = useState(rule?.name || "");
   const [priority, setPriority] = useState(String(rule?.priority || 0));
@@ -125,7 +143,7 @@ export default function RuleDetail() {
 
   return (
     <Page
-      backAction={{ content: 'Rules', url: '/app/rules' }}
+      backAction={{ content: 'Rules', onAction: () => navigate('/app/rules') }}
       title={rule ? `Edit ${rule.name}` : "New Product Rule"}
       primaryAction={{
         content: 'Save',
@@ -144,12 +162,25 @@ export default function RuleDetail() {
         {rule && <button onClick={() => submit({ _action: "delete" }, { method: "post" })}>Delete</button>}
       </ui-title-bar>
       <Layout>
+        {actionData?.error && (
+          <Layout.Section>
+            <Banner title="Error saving rule" tone="critical">
+              <p>{actionData.error}</p>
+            </Banner>
+          </Layout.Section>
+        )}
         <Layout.Section>
           <BlockStack gap="500">
             <Card padding="400">
               <BlockStack gap="400">
                 <Text variant="headingMd" as="h2">Basic Information</Text>
-                <TextField label="Rule Name" value={name} onChange={setName} autoComplete="off" />
+                <TextField 
+                  label="Rule Name" 
+                  value={name} 
+                  onChange={setName} 
+                  autoComplete="off" 
+                  error={actionData?.error && (actionData.error.includes("name") || actionData.error.includes("required")) ? actionData.error : undefined}
+                />
                 <TextField label="Priority" type="number" value={priority} onChange={setPriority} autoComplete="off" helpText="Higher priority rules match first." />
                 <Checkbox label="Active" checked={isActive} onChange={setIsActive} />
               </BlockStack>
@@ -208,6 +239,9 @@ export default function RuleDetail() {
             <BlockStack gap="400">
               <Text variant="headingMd" as="h2">Applied Products</Text>
               <Button onClick={handleSelectProducts}>Select Products</Button>
+              {actionData?.error && actionData.error.includes("product") && (
+                <Text as="p" tone="critical">{actionData.error}</Text>
+              )}
               <ResourceList
                 resourceName={{ singular: 'product', plural: 'products' }}
                 items={displayProducts}

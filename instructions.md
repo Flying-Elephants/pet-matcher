@@ -320,3 +320,19 @@ The "Usage Lever" (50 matches) ensures that as soon as a merchant succeeds and d
 7. Conclusion
 The transformation of pet-matcher from a repository of "utility code" to a compliant, scalable "Platform App" is a significant undertaking, but one that is mandated by the realities of the 2026 Shopify ecosystem. By adopting the Strict Modular Monolith architecture and enforcing it through the Four Agents (Architect, Constructor, Sentinel, Optimizer), the application will shed its technical debt and achieve the resilience required for long-term success.
 The move to React Router v7 and Bulk Operations solves the existential threats of performance degradation and API rate limits, ensuring the app can handle the rigorous demands of "Built for Shopify" certification. Simultaneously, the pivot to a Data-First strategy—capturing pet profiles and birthdays—unlocks the high-value retention marketing that justifies the $49/month price point. The blueprint is set, the agents are defined, and the execution of this Master Plan will elevate pet-matcher into a category-leading commercial platform.
+
+## 8. App Functionality Notes (Post-Rebuild)
+
+### 8.1 Product Matching (Smart Matcher v2.0)
+The app uses a "Smart Matcher" that allows merchants to define complex rules for matching pets with products.
+- **Rule-Based Matching**: Rules can be based on pet type, breed, life stage (age), and energy levels.
+- **All-Match Fallback**: If a product has **no active rules** associated with it, it will automatically match with **all pet profiles**. This ensures that default products are visible to all users unless specifically restricted by a rule.
+- **Prioritization**: Rules are evaluated based on priority; higher priority rules take precedence when determining matches.
+
+### 8.2 Product Synchronization
+The app automatically synchronizes products from the Shopify store using the Bulk Operations API.
+- **Automatic Sync**: Sync is initiated via the Bulk Operations API. The UI in `app/routes/app.sync.tsx` displays a progress bar to show the synchronization status.
+- **Incremental Updates**: New products are pulled and made available for rule assignment.
+- **Matched Count Tracking**: Every time a product is successfully matched to a pet profile during a customer session via an active rule, it is tracked for analytics and billing purposes.
+
+

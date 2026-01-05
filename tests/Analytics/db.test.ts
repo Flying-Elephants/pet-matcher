@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { AnalyticsDb } from "../internal/db";
-import db from "../../../db.server";
+import { AnalyticsDb } from "../../app/modules/Analytics/internal/db";
+import db from "../../app/db.server";
 
 describe("AnalyticsDb Integration", () => {
   const shop = "test-analytics-shop.myshopify.com";
@@ -16,16 +16,16 @@ describe("AnalyticsDb Integration", () => {
     // 1. Setup Pet Profiles
     await db.petProfile.createMany({
       data: [
-        { id: "p1", shop, shopifyId: "c1", name: "Buddy", breed: "Golden", attributes: "{}" },
-        { id: "p2", shop, shopifyId: "c2", name: "Max", breed: "Beagle", attributes: "{}" },
+        { id: "p1", shop, shopifyId: "c1", name: "Buddy", breed: "Golden", type: "Dog", attributes: "{}" },
+        { id: "p2", shop, shopifyId: "c2", name: "Max", breed: "Beagle", type: "Dog", attributes: "{}" },
       ],
     });
 
     // 2. Setup Product Rules (1 active, 1 inactive)
     await db.productRule.createMany({
       data: [
-        { id: "r1", shop, name: "Rule 1", isActive: true, conditions: "{}", productIds: "[]" },
-        { id: "r2", shop, name: "Rule 2", isActive: false, conditions: "{}", productIds: "[]" },
+        { id: "r1", shop, name: "Rule 1", isActive: true, conditions: "{}", productIds: "[]", priority: 0 },
+        { id: "r2", shop, name: "Rule 2", isActive: false, conditions: "{}", productIds: "[]", priority: 0 },
       ],
     });
 

@@ -26,10 +26,9 @@ export default function App() {
         <ui-nav-menu>
           <a href="/app" rel="home">Home</a>
           <a href="/app/dashboard">Dashboard</a>
-          <a href="/app/sync">Product Sync</a>
           <a href="/app/pet-types">Pet Types</a>
-          <a href="/app/audit">Performance Audit</a>
           <a href="/app/rules">Product Rules</a>
+          <a href="/app/settings">Settings</a>
         </ui-nav-menu>
         <Outlet />
       </PolarisProvider>

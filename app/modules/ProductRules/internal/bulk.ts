@@ -83,6 +83,52 @@ export const BulkOperationService = {
     return product;
   },
 
+  async processSyncResult(url: string, shop: string) {
+    if (!url) return 0;
+
+    console.log(`Starting processing of bulk file: ${url}`);
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch bulk result: ${response.statusText}`);
+        }
+
+        const text = await response.text();
+        const lines = text.split("\n");
+        
+        let count = 0;
+        
+        for (const line of lines) {
+            if (!line.trim()) continue;
+
+            try {
+                const node = JSON.parse(line);
+                // Identifying products: ID starts with gid://shopify/Product/ and has title
+                // Ensure it is not a child node (like variant) if flat structure is used, though our query was nested.
+                // JSONL from nested query usually separates nodes.
+                // Product node will have `title`.
+                
+                if (node.id && node.id.startsWith("gid://shopify/Product/") && !node.__parentId) {
+                    await db.syncedProduct.upsert({
+                        where: { id: node.id },
+                        update: { title: node.title, shop, updatedAt: new Date() },
+                        create: { id: node.id, title: node.title, shop }
+                    });
+                    count++;
+                }
+            } catch (e) {
+                console.error("Error parsing/saving line:", e);
+            }
+        }
+        
+        console.log(`Processed ${count} products.`);
+        return count;
+    } catch (e) {
+        console.error("Error processing sync result:", e);
+        throw e;
+    }
+  },
+
   async deleteProduct(productId: string) {
     await db.syncedProduct.deleteMany({
         where: { id: productId }
