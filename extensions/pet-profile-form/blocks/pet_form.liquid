@@ -236,6 +236,20 @@
                   <input type="date" id="pet-birthday" name="birthday" class="pp-input">
                 </div>
 
+                <div class="pp-form-row">
+                  <div class="pp-form-group pp-form-group--weight">
+                    <label for="pet-weight" class="pp-label">Weight <span class="pp-label-optional">(Optional)</span></label>
+                    <input type="number" id="pet-weight" name="weight" class="pp-input" step="0.1" min="0" placeholder="e.g. 10">
+                  </div>
+                  <div class="pp-form-group pp-form-group--unit">
+                    <label for="pet-weight-unit" class="pp-label">Unit</label>
+                    <select id="pet-weight-unit" name="weightUnit" class="pp-input">
+                      <option value="kg">kg</option>
+                      <option value="lbs">lbs</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div class="pp-form-actions">
                   <button type="submit" id="form-submit-btn" class="pp-button pp-button--primary">
                     Save Pet
@@ -280,7 +294,8 @@
       "type": "text",
       "id": "trigger_label",
       "label": "Button Label",
-      "default": "My Pets"
+      "default": "My Pets",
+      "info": "Text displayed on the floating action button"
     },
     {
       "type": "select",
@@ -334,13 +349,14 @@
     },
     {
       "type": "header",
-      "content": "Modal & Form Colors"
+      "content": "Modal Appearance"
     },
     {
       "type": "color",
       "id": "color_primary",
       "label": "Primary Theme Color",
-      "default": "#008060"
+      "default": "#008060",
+      "info": "Used for buttons and active states"
     },
     {
       "type": "color",
@@ -361,10 +377,6 @@
       "default": "#e1e3e5"
     },
     {
-      "type": "header",
-      "content": "Layout"
-    },
-    {
       "type": "range",
       "id": "container_width",
       "min": 400,
@@ -381,8 +393,12 @@
       "max": 40,
       "step": 2,
       "unit": "px",
-      "label": "Border Radius",
+      "label": "Corner Radius",
       "default": 16
+    },
+    {
+      "type": "header",
+      "content": "Typography"
     },
     {
       "type": "range",
@@ -391,7 +407,7 @@
       "max": 40,
       "step": 2,
       "unit": "px",
-      "label": "Heading Size",
+      "label": "Heading Font Size",
       "default": 24
     },
     {
@@ -401,17 +417,18 @@
       "max": 20,
       "step": 1,
       "unit": "px",
-      "label": "Body Text Size",
+      "label": "Body Font Size",
       "default": 14
     },
     {
       "type": "header",
-      "content": "Text Content"
+      "content": "Welcome View",
+      "info": "Settings for the view shown to logged-in customers with no pets"
     },
     {
       "type": "text",
       "id": "welcome_icon",
-      "label": "Welcome Icon",
+      "label": "Welcome Icon (Emoji)",
       "default": "👋"
     },
     {
@@ -423,19 +440,24 @@
     {
       "type": "textarea",
       "id": "welcome_text",
-      "label": "Welcome Text",
+      "label": "Welcome Description",
       "default": "Create a profile for your furry friend to get personalized product recommendations."
     },
     {
       "type": "text",
       "id": "welcome_btn_text",
-      "label": "Welcome Button",
+      "label": "Action Button Label",
       "default": "Add Your First Pet"
+    },
+    {
+      "type": "header",
+      "content": "Login View",
+      "info": "Settings for the view shown to guest customers"
     },
     {
       "type": "text",
       "id": "login_icon",
-      "label": "Login Icon",
+      "label": "Login Icon (Emoji)",
       "default": "🔒"
     },
     {
@@ -447,38 +469,43 @@
     {
       "type": "textarea",
       "id": "login_text",
-      "label": "Login Text",
+      "label": "Login Description",
       "default": "Log in to create profiles for your pets and unlock personalized product matches."
     },
     {
       "type": "text",
       "id": "login_btn_text",
-      "label": "Login Button",
+      "label": "Login Button Label",
       "default": "Log In to Start"
+    },
+    {
+      "type": "header",
+      "content": "Management View",
+      "info": "Settings for the main pet management dashboard"
     },
     {
       "type": "text",
       "id": "summary_icon",
-      "label": "Summary Icon",
+      "label": "Active Pet Icon (Emoji)",
       "default": "🐾"
     },
     {
       "type": "text",
-      "id": "manage_btn_text",
-      "label": "Manage Button",
-      "default": "Manage Pets"
-    },
-    {
-      "type": "text",
       "id": "manage_title",
-      "label": "Management Title",
+      "label": "Dashboard Title",
       "default": "My Pet Profiles"
     },
     {
       "type": "textarea",
       "id": "manage_subtitle",
-      "label": "Management Subtitle",
+      "label": "Dashboard Subtitle",
       "default": "Manage your pets to get personalized recommendations."
+    },
+    {
+      "type": "text",
+      "id": "manage_btn_text",
+      "label": "Manage Pets Button Label",
+      "default": "Manage Pets"
     }
   ]
 }

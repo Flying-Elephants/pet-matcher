@@ -73,8 +73,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (isDesignMode) {
     showView('welcome');
-    // In design mode, keep modal open or handle accordingly
-    if(modal.overlay) modal.overlay.style.display = 'flex';
+    // In design mode, keep modal closed by default to avoid annoyance
+    // Merchants can open it via the floating trigger if they need to see it
+    if(modal.overlay) modal.overlay.style.display = 'none';
   }
 
   if (customerId) {
@@ -276,6 +277,25 @@ document.addEventListener('DOMContentLoaded', function() {
     if (pet.birthday) {
         document.getElementById('pet-birthday').value = pet.birthday.split('T')[0];
     }
+    
+    // Weight support
+    if (pet.weightGram) {
+        const weightInput = document.getElementById('pet-weight');
+        const unitSelect = document.getElementById('pet-weight-unit');
+        const unit = settings.weightUnit || 'kg';
+        unitSelect.value = unit;
+        
+        let displayWeight;
+        if (unit === 'kg') {
+            displayWeight = pet.weightGram / 1000;
+        } else {
+            displayWeight = (pet.weightGram / 453.59).toFixed(1);
+        }
+        weightInput.value = displayWeight;
+    } else {
+        document.getElementById('pet-weight').value = '';
+    }
+
     elements.formTitle.textContent = 'Edit Pet';
     elements.formSubmitBtn.textContent = 'Update Pet';
     elements.formCancelBtn.style.display = 'inline-block';
@@ -294,8 +314,20 @@ document.addEventListener('DOMContentLoaded', function() {
         name: data.name,
         type: data.type,
         breed: data.breed,
-        birthday: data.birthday || null
+        birthday: data.birthday || null,
+        weightGram: null
     };
+
+    if (data.weight) {
+        const weightValue = parseFloat(data.weight);
+        const unit = data.weightUnit;
+        if (unit === 'kg') {
+            payload.weightGram = Math.round(weightValue * 1000);
+        } else {
+            payload.weightGram = Math.round(weightValue * 453.59);
+        }
+    }
+
     const intent = formData.get('intent');
     const id = formData.get('id');
     elements.formSubmitBtn.disabled = true;

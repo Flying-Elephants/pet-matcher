@@ -21,7 +21,7 @@ import { PlusIcon, SaveIcon, InfoIcon } from "@shopify/polaris-icons";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { PetProfileService } from "../modules/PetProfiles";
-import type { PetSettings, PetTypeConfig } from "../modules/PetProfiles/core/types";
+import { PetSettingsSchema, type PetSettings, type PetTypeConfig } from "../modules/PetProfiles/core/types";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { PageGuide } from "../components/PageGuide";
 import { GUIDE_CONTENT } from "../modules/Core/guide-content";
@@ -43,10 +43,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
-    const settings: PetSettings = JSON.parse(settingsJson);
-    await PetProfileService.updateSettings(session.shop, settings);
+    const parsed = JSON.parse(settingsJson);
+    const validated = PetSettingsSchema.parse(parsed);
+    await PetProfileService.updateSettings(session.shop, validated);
     return { status: "success", message: "Settings saved successfully" };
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === "ZodError") {
+      return { status: "error", message: error.errors.map((e: any) => e.message).join(", ") };
+    }
     return { status: "error", message: "Failed to save settings" };
   }
 };

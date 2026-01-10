@@ -9,43 +9,54 @@ import {
   PageActions,
   FormLayout,
   Text,
+  Select,
 } from "@shopify/polaris";
 import { InfoIcon } from "@shopify/polaris-icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { authenticate } from "../shopify.server";
 import { PageGuide } from "../components/PageGuide";
 import { GUIDE_CONTENT } from "../modules/Core/guide-content";
+import { PetProfileService, PetSettingsSchema } from "../modules/PetProfiles";
+import { useActionData } from "react-router";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
+  const settings = await PetProfileService.getSettings(session.shop);
 
-  return data({
-    settings: {
-      shopName: "My Pet Store",
-      supportEmail: "support@mypetstore.com",
-      autoSelectFirstPet: true,
-    },
-  });
+  return data({ settings });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const formData = await request.formData();
-  const data = Object.fromEntries(formData);
+  
+  try {
+    const rawSettings = JSON.parse(formData.get("settings") as string);
+    const validatedSettings = PetSettingsSchema.parse(rawSettings);
 
-  console.log("Mock settings update:", data);
-
-  return { success: true };
+    await PetProfileService.updateSettings(session.shop, validatedSettings);
+    return data({ success: true });
+  } catch (error) {
+    console.error("Settings update error:", error);
+    return data({ success: false, error: "Invalid settings data" }, { status: 400 });
+  }
 };
 
 export default function Settings() {
   const { settings } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
   const [formState, setFormState] = useState(settings);
   const [guideActive, setGuideActive] = useState(false);
   const submit = useSubmit();
 
+  useEffect(() => {
+    if (actionData?.success) {
+      shopify.toast.show("Settings saved");
+    }
+  }, [actionData]);
+
   const handleSave = () => {
-    submit(formState as any, { method: "post" });
+    submit({ settings: JSON.stringify(formState) }, { method: "post" });
   };
 
   return (
@@ -68,20 +79,16 @@ export default function Settings() {
         <Layout.Section>
           <Card>
             <BlockStack gap="400">
-              <Text as="h2" variant="headingMd">General Settings</Text>
+              <Text as="h2" variant="headingMd">Pet Profile Settings</Text>
               <FormLayout>
-                <TextField
-                  label="Shop Name"
-                  value={formState.shopName}
-                  onChange={(value) => setFormState({ ...formState, shopName: value })}
-                  autoComplete="off"
-                />
-                <TextField
-                  label="Support Email"
-                  type="email"
-                  value={formState.supportEmail}
-                  onChange={(value) => setFormState({ ...formState, supportEmail: value })}
-                  autoComplete="email"
+                <Select
+                  label="Weight Unit"
+                  options={[
+                    { label: "Kilograms (kg)", value: "kg" },
+                    { label: "Pounds (lbs)", value: "lbs" },
+                  ]}
+                  value={formState.weightUnit}
+                  onChange={(value) => setFormState({ ...formState, weightUnit: value as any })}
                 />
               </FormLayout>
             </BlockStack>

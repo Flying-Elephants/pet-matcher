@@ -2,8 +2,9 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useLoaderData, useSubmit, useNavigate, useNavigation, redirect, useActionData } from "react-router";
 import { Page, Layout, Card, BlockStack, TextField, Button, InlineStack, Text, Badge, Checkbox, ResourceList, Thumbnail, ResourceItem, Box, Scrollable, Banner } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
-import { ProductRuleService } from "../modules/ProductRules";
+import { ProductRuleService, ProductRuleUpsertSchema } from "../modules/ProductRules";
 import { PetProfileService } from "../modules/PetProfiles";
+import { WeightUtils } from "../modules/Core/WeightUtils";
 import { useState, useMemo } from "react";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -62,14 +63,24 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     return redirect("/app/rules");
   }
 
-  const data = JSON.parse(formData.get("rule") as string);
+  const rawData = formData.get("rule");
+  if (typeof rawData !== "string") {
+    return { error: "Invalid data submitted" };
+  }
+
   try {
+    const parsedJson = JSON.parse(rawData);
+    const validated = ProductRuleUpsertSchema.parse(parsedJson);
+
     await ProductRuleService.upsertRule(session.shop, {
-      ...data,
+      ...validated,
       id: params.id === "new" ? undefined : params.id
     });
     return redirect("/app/rules");
   } catch (error: any) {
+    if (error.name === "ZodError") {
+      return { error: error.errors.map((e: any) => e.message).join(", ") };
+    }
     return { error: error.message };
   }
 };
@@ -86,8 +97,11 @@ export default function RuleDetail() {
   const [isActive, setIsActive] = useState(rule?.isActive ?? true);
   const [selectedTypes, setSelectedTypes] = useState<string[]>(rule?.conditions.petTypes || []);
   const [selectedBreeds, setSelectedBreeds] = useState<string[]>(rule?.conditions.breeds || []);
+  const [weightMin, setWeightMin] = useState(String(WeightUtils.fromGrams(rule?.conditions.weightRange?.min, settings.weightUnit as any) ?? ""));
+  const [weightMax, setWeightMax] = useState(String(WeightUtils.fromGrams(rule?.conditions.weightRange?.max, settings.weightUnit as any) ?? ""));
   const [productIds, setProductIds] = useState<string[]>(rule?.productIds || []);
   const [displayProducts, setDisplayProducts] = useState(initialProductData || []);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const availableBreeds = useMemo(() => {
     return settings.types
@@ -96,13 +110,49 @@ export default function RuleDetail() {
   }, [settings, selectedTypes]);
 
   const handleSave = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!name.trim()) {
+      newErrors.name = "Rule name is required.";
+    }
+
+    if (productIds.length === 0) {
+      newErrors.products = "At least one product must be selected.";
+    }
+
+    const min = weightMin ? parseFloat(weightMin) : null;
+    const max = weightMax ? parseFloat(weightMax) : null;
+
+    if (min !== null && min < 0) {
+      newErrors.weightMin = "Weight cannot be negative.";
+    }
+    if (max !== null && max < 0) {
+      newErrors.weightMax = "Weight cannot be negative.";
+    }
+
+    if ((min !== null && max === null) || (min === null && max !== null)) {
+      newErrors.weight = "Both min and max weights are required if either is provided.";
+    } else if (min !== null && max !== null && max < min) {
+      newErrors.weight = "Max weight must be greater than or equal to min weight.";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     const payload = {
       name,
       priority: parseInt(priority),
       isActive,
       conditions: {
         petTypes: selectedTypes,
-        breeds: selectedBreeds
+        breeds: selectedBreeds,
+        weightRange: {
+          min: min !== null ? WeightUtils.toGrams(min, settings.weightUnit as any) : null,
+          max: max !== null ? WeightUtils.toGrams(max, settings.weightUnit as any) : null,
+        }
       },
       productIds
     };
@@ -157,10 +207,6 @@ export default function RuleDetail() {
         loading: isDeleting
       }] : []}
     >
-      <ui-title-bar title={rule ? `Edit ${rule.name}` : "New Product Rule"}>
-        <button variant="primary" onClick={handleSave}>Save</button>
-        {rule && <button onClick={() => submit({ _action: "delete" }, { method: "post" })}>Delete</button>}
-      </ui-title-bar>
       <Layout>
         {actionData?.error && (
           <Layout.Section>
@@ -179,7 +225,7 @@ export default function RuleDetail() {
                   value={name} 
                   onChange={setName} 
                   autoComplete="off" 
-                  error={actionData?.error && (actionData.error.includes("name") || actionData.error.includes("required")) ? actionData.error : undefined}
+                  error={errors.name || (actionData?.error && (actionData.error.includes("name") || actionData.error.includes("required")) ? actionData.error : undefined)}
                 />
                 <TextField label="Priority" type="number" value={priority} onChange={setPriority} autoComplete="off" helpText="Higher priority rules match first." />
                 <Checkbox label="Active" checked={isActive} onChange={setIsActive} />
@@ -189,6 +235,11 @@ export default function RuleDetail() {
             <Card padding="400">
               <BlockStack gap="400">
                 <Text variant="headingMd" as="h2">Conditions</Text>
+                {errors.weight && (
+                  <Banner tone="critical">
+                    <p>{errors.weight}</p>
+                  </Banner>
+                )}
                 <InlineStack gap="500" align="start">
                   <Box width="200px">
                     <BlockStack gap="200">
@@ -229,6 +280,37 @@ export default function RuleDetail() {
                     </BlockStack>
                   </Box>
                 </InlineStack>
+
+                <BlockStack gap="200">
+                  <Text variant="headingSm" as="h3">Weight Range ({settings.weightUnit || 'kg'})</Text>
+                  <InlineStack gap="400">
+                    <Box width="150px">
+                      <TextField
+                        label="Min Weight"
+                        type="number"
+                        value={weightMin}
+                        onChange={setWeightMin}
+                        autoComplete="off"
+                        suffix={settings.weightUnit || 'kg'}
+                        error={errors.weightMin}
+                      />
+                    </Box>
+                    <Box width="150px">
+                      <TextField
+                        label="Max Weight"
+                        type="number"
+                        value={weightMax}
+                        onChange={setWeightMax}
+                        autoComplete="off"
+                        suffix={settings.weightUnit || 'kg'}
+                        error={errors.weightMax}
+                      />
+                    </Box>
+                  </InlineStack>
+                  <Text variant="bodySm" tone="subdued" as="p">
+                    Leave empty for no limit. Rules use grams internally; values here are in {settings.weightUnit || 'kg'}.
+                  </Text>
+                </BlockStack>
               </BlockStack>
             </Card>
           </BlockStack>
@@ -239,8 +321,8 @@ export default function RuleDetail() {
             <BlockStack gap="400">
               <Text variant="headingMd" as="h2">Applied Products</Text>
               <Button onClick={handleSelectProducts}>Select Products</Button>
-              {actionData?.error && actionData.error.includes("product") && (
-                <Text as="p" tone="critical">{actionData.error}</Text>
+              {(errors.products || (actionData?.error && actionData.error.includes("product"))) && (
+                <Text as="p" tone="critical">{errors.products || actionData?.error}</Text>
               )}
               <ResourceList
                 resourceName={{ singular: 'product', plural: 'products' }}

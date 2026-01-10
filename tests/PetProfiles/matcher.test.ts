@@ -44,24 +44,39 @@ describe("MatcherService", () => {
   });
 
   describe("isProductMatched fallback", () => {
-    it("should return true if product has no rules", async () => {
-      const profile = { breed: "Labrador" };
-      const isMatched = await MatcherService.isProductMatched(profile as any, [] as any, "untargeted-prod");
-      expect(isMatched).toBe(true);
+    it("should return isMatched: true if product has no rules", async () => {
+      const profile = { id: "pet1", breed: "Labrador" };
+      const result = await MatcherService.isProductMatched(profile as any, [] as any, "untargeted-prod");
+      expect(result.isMatched).toBe(true);
     });
 
-    it("should return true if product only has inactive rules", async () => {
-      const profile = { breed: "Labrador" };
-      const rules = [{ id: "rule1", isActive: false, productIds: ["prod1"], conditions: { breed: ["Golden Retriever"] } }];
-      const isMatched = await MatcherService.isProductMatched(profile as any, rules as any, "prod1");
-      expect(isMatched).toBe(true);
+    it("should return isMatched: true if product only has inactive rules", async () => {
+      const profile = { id: "pet1", breed: "Labrador" };
+      const rules = [{ id: "rule1", isActive: false, productIds: ["prod1"], conditions: { breeds: ["Golden Retriever"] } }];
+      const result = await MatcherService.isProductMatched(profile as any, rules as any, "prod1");
+      expect(result.isMatched).toBe(true);
     });
 
-    it("should return false if product has active rule but profile doesn't match", async () => {
-      const profile = { breed: "Labrador" };
-      const rules = [{ id: "rule1", isActive: true, productIds: ["prod1"], conditions: { breed: ["Golden Retriever"] } }];
-      const isMatched = await MatcherService.isProductMatched(profile as any, rules as any, "prod1");
-      expect(isMatched).toBe(false);
+    it("should return isMatched: false if product has active rule but profile doesn't match", async () => {
+      const profile = { id: "pet1", breed: "Labrador" };
+      const rules = [{ id: "rule1", isActive: true, productIds: ["prod1"], conditions: { breeds: ["Golden Retriever"] } }];
+      const result = await MatcherService.isProductMatched(profile as any, rules as any, "prod1");
+      expect(result.isMatched).toBe(false);
+    });
+
+    it("should return MISSING_WEIGHT warning if rule has weight but profile doesn't", async () => {
+      const profile = { id: "pet1", breed: "Labrador", weightGram: null };
+      const rules = [{ 
+        id: "rule1", 
+        isActive: true, 
+        productIds: ["prod1"], 
+        conditions: { 
+          weightRange: { min: 1000, max: 5000 } 
+        } 
+      }];
+      const result = await MatcherService.isProductMatched(profile as any, rules as any, "prod1");
+      expect(result.isMatched).toBe(false);
+      expect(result.warnings).toContain("MISSING_WEIGHT");
     });
   });
 });

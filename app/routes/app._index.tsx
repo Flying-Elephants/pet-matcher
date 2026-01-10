@@ -193,18 +193,34 @@ export default function Index() {
                     badge={hasProducts ? { text: "Completed", tone: "success" } : isSyncing ? { text: "Syncing", tone: "info" } : isCompleted ? { text: "Ready", tone: "info" } : { text: "Required", tone: "attention" }}
                     actions={
                       <InlineStack gap="200">
-                        {isCompleted && !hasProducts && (
-                           <Button onClick={handleProcessSync} variant="primary" icon={DatabaseIcon} loading={fetcher.state !== "idle" && fetcher.formData?.get("actionType") === "PROCESS_SYNC"}>
-                             Apply to Database
-                           </Button>
+                        {isCompleted ? (
+                          <>
+                            <Button 
+                              onClick={handleProcessSync} 
+                              variant="primary" 
+                              icon={DatabaseIcon} 
+                              loading={fetcher.state !== "idle" && fetcher.formData?.get("actionType") === "PROCESS_SYNC"}
+                            >
+                              Process Sync
+                            </Button>
+                            <Button 
+                              onClick={handleStartSync} 
+                              loading={fetcher.state !== "idle" && fetcher.formData?.get("actionType") === "START_SYNC"}
+                              icon={RefreshIcon}
+                            >
+                              Re-sync
+                            </Button>
+                          </>
+                        ) : (
+                          <Button 
+                            onClick={handleStartSync} 
+                            loading={fetcher.state !== "idle" && fetcher.formData?.get("actionType") === "START_SYNC"}
+                            icon={RefreshIcon}
+                            variant={!hasProducts && !isSyncing ? "primary" : undefined}
+                          >
+                            {hasProducts ? "Re-sync" : "Start Sync"}
+                          </Button>
                         )}
-                        <Button 
-                          onClick={handleStartSync} 
-                          loading={fetcher.state !== "idle" && fetcher.formData?.get("actionType") === "START_SYNC"}
-                          icon={RefreshIcon}
-                        >
-                          {hasProducts || isCompleted ? "Re-sync" : "Start Sync"}
-                        </Button>
                       </InlineStack>
                     }
                   />

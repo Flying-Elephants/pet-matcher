@@ -33,8 +33,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
 
     if (productId) {
-      const { profiles, matches } = await PetProfileService.getMatchesForProduct(session.shop, customerId, productId);
-      const settings = await PetProfileService.getSettings(session.shop);
+      const [{ profiles, matches }, settings] = await Promise.all([
+        PetProfileService.getMatchesForProduct(session.shop, customerId, productId),
+        PetProfileService.getSettings(session.shop)
+      ]);
       const activePet = profiles.find(p => p.isSelected);
 
       return jsonResponse({
@@ -45,8 +47,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       });
     }
 
-    const profiles = await PetProfileService.getProfilesByCustomer(session.shop, customerId);
-    const settings = await PetProfileService.getSettings(session.shop);
+    const [profiles, settings] = await Promise.all([
+      PetProfileService.getProfilesByCustomer(session.shop, customerId),
+      PetProfileService.getSettings(session.shop)
+    ]);
     const activePet = profiles.find(p => p.isSelected);
 
     return jsonResponse({ 

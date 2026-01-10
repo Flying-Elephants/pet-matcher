@@ -7,6 +7,7 @@ export const PetProfileSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   type: z.string().default("Dog"),
   breed: z.string().min(1, "Breed is required"),
+  weightGram: z.number().int().nonnegative().nullable().optional(),
   birthday: z.coerce.date().nullable().optional(),
   attributes: z.record(z.string(), z.any()).default({}),
   isSelected: z.boolean().default(false),
@@ -29,13 +30,24 @@ export const UpdatePetProfileSchema = CreatePetProfileSchema.partial();
 
 export type UpdatePetProfileInput = z.infer<typeof UpdatePetProfileSchema>;
 
-export interface PetTypeConfig {
-  id: string;
-  label: string;
-  breeds: string[];
-}
+export const PetTypeConfigSchema = z.object({
+  id: z.string(),
+  label: z.string().min(1, "Type name is required"),
+  breeds: z.array(z.string()).default([]),
+});
 
-export interface PetSettings {
-  types: PetTypeConfig[];
+export type PetTypeConfig = z.infer<typeof PetTypeConfigSchema>;
+
+export const PetSettingsSchema = z.object({
+  types: z.array(PetTypeConfigSchema).default([]),
+  weightUnit: z.enum(["kg", "lbs"]).default("kg"),
+});
+
+export type PetSettings = z.infer<typeof PetSettingsSchema>;
+
+export interface MatchResult {
+  petId: string;
+  isMatched: boolean;
+  warnings: string[];
 }
 

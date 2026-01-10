@@ -161,5 +161,23 @@ function isRuleMatch(conditions: RuleConditions, pet: any): boolean {
     return false;
   }
 
+  // 3. Weight Match
+  if (conditions.weightRange) {
+    const { min, max } = conditions.weightRange;
+    const petWeight = pet.weightGram;
+
+    if (petWeight === undefined || petWeight === null) {
+      return false; // If rule has weight range, pet must have weight
+    }
+
+    if (min !== undefined && min !== null && petWeight < min) {
+      return false;
+    }
+
+    if (max !== undefined && max !== null && petWeight > max) {
+      return false;
+    }
+  }
+
   return true;
 }

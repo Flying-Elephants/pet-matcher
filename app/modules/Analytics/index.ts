@@ -3,8 +3,10 @@ import { AnalyticsDb } from "./internal/db";
 export interface SummaryData {
   totalMatches: number;
   activeRules: number;
-  popularBreeds: string[];
+  totalPetProfiles: number;
   syncedProductsCount: number;
+  topPerformingRules: Array<{ ruleName: string; count: number }>;
+  popularBreeds: Array<{ breed: string; count: number }>;
 }
 
 export const AnalyticsService = {

@@ -35,21 +35,19 @@ export const PetProfileService = {
     return PetProfileDb.delete(shop, id);
   },
 
-  getRecommendedProducts: async (profile: PetProfile, rules: any[]): Promise<string[]> => {
+  getRecommendedProducts: async (profile: PetProfile, rulesData: any): Promise<string[]> => {
+    const rules = Array.isArray(rulesData) ? rulesData : (rulesData?.rules || []);
     return MatcherService.match(profile, rules);
   },
 
   getMatchesForProduct: async (shop: string, customerId: string, productId: string) => {
-    const [profiles, rules] = await Promise.all([
+    const [profiles, { rules }] = await Promise.all([
       PetProfileDb.findByCustomer(shop, customerId),
       ProductRuleService.getRules(shop)
     ]);
 
     const matches = await Promise.all(
-      profiles.map(async (pet) => ({
-        petId: pet.id,
-        isMatched: await MatcherService.isProductMatched(pet, rules, productId)
-      }))
+      profiles.map(async (pet) => MatcherService.isProductMatched(pet, rules, productId))
     );
 
     return { profiles, matches };

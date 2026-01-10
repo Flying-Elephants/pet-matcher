@@ -2,22 +2,47 @@
      data-product-id="{{ product.id }}" 
      data-customer-id="{{ customer.id }}"
      data-show-unmatched="{{ block.settings.show_unmatched }}"
-     style="--match-color: {{ block.settings.match_color }}; --no-match-color: {{ block.settings.no_match_color }};">
+     data-design-mode="{{ request.design_mode }}"
+     style="--match-color: {{ block.settings.match_color }}; 
+            --no-match-color: {{ block.settings.no_match_color }};
+            --badge-font-size: {{ block.settings.badge_font_size }}px;
+            --badge-border-radius: {{ block.settings.badge_border_radius }}px;
+            --badge-margin-top: {{ block.settings.margin_top }}px;
+            --badge-margin-bottom: {{ block.settings.margin_bottom }}px;
+            --warning-bg: {{ block.settings.warning_bg_color }};
+            --warning-text: {{ block.settings.warning_text_color }};">
   
-  <div id="pp-match-badge-loading" class="pp-match-loading">
-    <span class="pp-match-spinner"></span> Checking matches...
-  </div>
+  {% if request.design_mode %}
+    <div id="pp-match-badge-preview" class="pp-match-preview" style="display: block !important;">
+      <div class="pp-match-item-wrapper">
+        <div class="pp-match-item pp-match-item--matched {% if block.settings.enable_animation %}pp-animate-fade-in{% endif %}">
+          <span class="pp-match-icon">🐾</span>
+          <span>Sample Pet (Match Preview)</span>
+        </div>
+        {% if block.settings.show_weight_warning %}
+        <div class="pp-match-warning {% if block.settings.enable_animation %}pp-animate-slide-up{% endif %}">
+          <strong>Weight Match:</strong> This product is suitable for <strong>Sample Pet</strong> (10kg).
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div id="pp-match-badge-loading" class="pp-match-loading">
+      <span class="pp-match-spinner"></span> Checking matches...
+    </div>
 
-  <div id="pp-match-badge-content" style="display: none;">
-    <!-- Populated by JS -->
-  </div>
+    <div id="pp-match-badge-content" style="display: none;">
+      <!-- Populated by JS -->
+    </div>
+  {% endif %}
 </div>
 
 <script src="{{ 'product_match_badge.js' | asset_url }}" defer="defer"></script>
 
 {% style %}
   .pp-match-badge-container {
-    margin: 1rem 0;
+    margin-top: var(--badge-margin-top);
+    margin-bottom: var(--badge-margin-bottom);
     font-family: inherit;
   }
   .pp-match-loading {
@@ -38,12 +63,29 @@
   @keyframes pp-spin {
     to { transform: rotate(360deg); }
   }
+
+  .pp-animate-fade-in {
+    animation: pp-fade-in 0.5s ease-out forwards;
+  }
+  @keyframes pp-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .pp-animate-slide-up {
+    animation: pp-slide-up 0.4s ease-out forwards;
+  }
+  @keyframes pp-slide-up {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
   .pp-match-item {
     display: inline-flex;
     align-items: center;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.85em;
+    padding: 6px 14px;
+    border-radius: var(--badge-border-radius);
+    font-size: var(--badge-font-size);
     font-weight: 500;
     margin-right: 8px;
     margin-bottom: 8px;
@@ -61,6 +103,25 @@
   .pp-match-icon {
     margin-right: 6px;
   }
+  .pp-match-item-wrapper {
+    margin-bottom: 12px;
+  }
+  .pp-match-warning {
+    font-size: 0.85em;
+    color: var(--warning-text);
+    background-color: var(--warning-bg);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid {{ block.settings.warning_text_color | color_modify: 'alpha', 0.1 }};
+    margin-top: 6px;
+    line-height: 1.5;
+    display: block;
+  }
+  .pp-match-warning strong {
+    font-weight: 600;
+    color: inherit;
+    filter: brightness(0.8);
+  }
 {% endstyle %}
 
 {% schema %}
@@ -72,22 +133,107 @@
   },
   "settings": [
     {
+      "type": "header",
+      "content": "Badge Colors"
+    },
+    {
       "type": "color",
       "id": "match_color",
       "label": "Match Color",
-      "default": "#008060"
+      "default": "#008060",
+      "info": "Color for the 'Matched' status badge"
     },
     {
       "type": "color",
       "id": "no_match_color",
       "label": "No Match Color",
-      "default": "#666666"
+      "default": "#666666",
+      "info": "Color for the 'Not a match' status badge"
+    },
+    {
+      "type": "header",
+      "content": "Badge Layout & Size"
+    },
+    {
+      "type": "range",
+      "id": "badge_font_size",
+      "min": 10,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Badge Font Size",
+      "default": 13
+    },
+    {
+      "type": "range",
+      "id": "badge_border_radius",
+      "min": 0,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "Badge Corner Radius",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "margin_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top Margin",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "margin_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom Margin",
+      "default": 16
+    },
+    {
+      "type": "header",
+      "content": "Weight Warnings"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_weight_warning",
+      "label": "Show weight suitability warnings",
+      "default": true,
+      "info": "Displays a detailed box when a product is specifically recommended for the pet's weight."
+    },
+    {
+      "type": "color",
+      "id": "warning_bg_color",
+      "label": "Warning Background",
+      "default": "#fff4e5"
+    },
+    {
+      "type": "color",
+      "id": "warning_text_color",
+      "label": "Warning Text",
+      "default": "#b95000"
+    },
+    {
+      "type": "header",
+      "content": "Behavior & Effects"
     },
     {
       "type": "checkbox",
       "id": "show_unmatched",
       "label": "Show unmatched pets",
-      "default": true
+      "default": true,
+      "info": "If disabled, only pets that match the product will be shown."
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_animation",
+      "label": "Enable Entrance Animation",
+      "default": true,
+      "info": "Adds a subtle fade/slide effect when the badge appears."
     }
   ]
 }

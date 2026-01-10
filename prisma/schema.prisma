@@ -36,6 +36,7 @@ model PetProfile {
   name        String
   type        String   @default("Dog") // New field: 'Dog', 'Cat', etc.
   breed       String
+  weightGram  Int?     // Stored in grams
   birthday    DateTime? // For Lifecycle Marketing 
   attributes  String   // SQLite doesn't support Json
   createdAt   DateTime @default(now())

@@ -1,12 +1,15 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useLoaderData, useNavigate, useSubmit, redirect, useSearchParams } from "react-router";
-import { Page, Layout, Card, Text, Badge, InlineStack, BlockStack, EmptyState, Button, IndexTable, useIndexResourceState, Pagination } from "@shopify/polaris";
+import { Page, Layout, Card, Text, Badge, InlineStack, BlockStack, EmptyState, Button, IndexTable, useIndexResourceState, Pagination, Modal } from "@shopify/polaris";
 import { InfoIcon } from "@shopify/polaris-icons";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { authenticate } from "../shopify.server";
-import { ProductRuleService, type RuleSortKey } from "../modules/ProductRules";
+import { ProductRuleService, type RuleSortKey, type RuleConditions } from "../modules/ProductRules";
+import { PetProfileService } from "../modules/PetProfiles";
+import { WeightUtils } from "../modules/Core/WeightUtils";
 import { PageGuide } from "../components/PageGuide";
 import { GUIDE_CONTENT } from "../modules/Core/guide-content";
+import { z } from "zod";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -16,16 +19,27 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const page = parseInt(url.searchParams.get("page") || "1", 10);
   const limit = 20;
 
-  const { rules, totalCount } = await ProductRuleService.getRules(session.shop, {
-    sort: {
-      key: sortKey,
-      direction: sortDirection,
-    },
-    page,
-    limit,
-  });
+  const [rulesResult, settings] = await Promise.all([
+    ProductRuleService.getRules(session.shop, {
+      sort: {
+        key: sortKey,
+        direction: sortDirection,
+      },
+      page,
+      limit,
+    }),
+    PetProfileService.getSettings(session.shop)
+  ]);
 
-  return { rules, totalCount, sortKey, sortDirection, page, limit };
+  return { 
+    rules: rulesResult.rules, 
+    totalCount: rulesResult.totalCount, 
+    settings,
+    sortKey, 
+    sortDirection, 
+    page, 
+    limit 
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -35,29 +49,41 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const _action = formData.get("_action");
 
   if (_action === "delete") {
-    await ProductRuleService.deleteRule(session.shop, id);
+    const validatedId = z.string().min(1).parse(id);
+    await ProductRuleService.deleteRule(session.shop, validatedId);
     return redirect("/app/rules");
   }
 
   if (_action === "bulk_delete") {
-    const ids = JSON.parse(formData.get("ids") as string);
-    await ProductRuleService.deleteManyRules(session.shop, ids);
+    const idsJson = formData.get("ids");
+    if (typeof idsJson !== "string") return redirect("/app/rules");
+    
+    const parsedIds = JSON.parse(idsJson);
+    const validatedIds = z.array(z.string()).min(1).parse(parsedIds);
+    await ProductRuleService.deleteManyRules(session.shop, validatedIds);
     return redirect("/app/rules");
   }
 
   if (_action === "copy") {
-    return redirect(`/app/rules/new?copyFrom=${id}`);
+    const validatedId = z.string().min(1).parse(id);
+    return redirect(`/app/rules/new?copyFrom=${validatedId}`);
   }
 
   return redirect("/app/rules");
 };
 
 export default function RulesIndex() {
-  const { rules, totalCount, sortKey, sortDirection, page, limit } = useLoaderData<typeof loader>();
+  const { rules, totalCount, settings, sortKey, sortDirection, page, limit } = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [guideActive, setGuideActive] = useState(false);
   const submit = useSubmit();
   const navigate = useNavigate();
+
+  const weightUnit = settings.weightUnit || "kg";
+
+  const [deleteModalActive, setDeleteModalActive] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [bulkDeleteActive, setBulkDeleteActive] = useState(false);
 
   const resourceName = {
     singular: 'rule',
@@ -67,17 +93,29 @@ export default function RulesIndex() {
   const { selectedResources, allResourcesSelected, handleSelectionChange } =
     useIndexResourceState(rules as any);
 
+  const toggleDeleteModal = useCallback(() => setDeleteModalActive((active) => !active), []);
+  const toggleBulkDeleteModal = useCallback(() => setBulkDeleteActive((active) => !active), []);
+
+  const handleConfirmDelete = () => {
+    if (deleteId) {
+      submit({ id: deleteId, _action: "delete" }, { method: "post" });
+      setDeleteId(null);
+      toggleDeleteModal();
+    }
+  };
+
+  const handleConfirmBulkDelete = () => {
+    submit(
+      { ids: JSON.stringify(selectedResources), _action: "bulk_delete" },
+      { method: "post" }
+    );
+    toggleBulkDeleteModal();
+  };
+
   const promotedBulkActions = [
     {
       content: 'Delete rules',
-      onAction: () => {
-        if (confirm(`Are you sure you want to delete ${selectedResources.length} rules?`)) {
-          submit(
-            { ids: JSON.stringify(selectedResources), _action: "bulk_delete" },
-            { method: "post" }
-          );
-        }
-      },
+      onAction: toggleBulkDeleteModal,
     },
   ];
 
@@ -130,6 +168,19 @@ export default function RulesIndex() {
           </InlineStack>
         </IndexTable.Cell>
         <IndexTable.Cell>
+          {conditions.weightRange && (conditions.weightRange.min !== null || conditions.weightRange.max !== null) ? (
+            <Badge tone="success">
+              {conditions.weightRange.min !== null && conditions.weightRange.max !== null
+                ? `${WeightUtils.fromGrams(conditions.weightRange.min, weightUnit as any)}-${WeightUtils.fromGrams(conditions.weightRange.max, weightUnit as any)} ${weightUnit}`
+                : conditions.weightRange.min !== null
+                ? `>${WeightUtils.fromGrams(conditions.weightRange.min, weightUnit as any)} ${weightUnit}`
+                : `<${WeightUtils.fromGrams(conditions.weightRange.max, weightUnit as any)} ${weightUnit}`}
+            </Badge>
+          ) : (
+            <Text as="span" tone="subdued">All Weights</Text>
+          )}
+        </IndexTable.Cell>
+        <IndexTable.Cell>
           <Badge tone={isActive ? "success" : "warning"}>
             {isActive ? "Active" : "Inactive"}
           </Badge>
@@ -153,9 +204,8 @@ export default function RulesIndex() {
               size="slim"
               tone="critical"
               onClick={() => {
-                if (confirm("Are you sure you want to delete this rule?")) {
-                  submit({ id, _action: "delete" }, { method: "post" });
-                }
+                setDeleteId(id);
+                toggleDeleteModal();
               }}
             >
               Delete
@@ -225,11 +275,12 @@ export default function RulesIndex() {
                     { title: 'Products' },
                     { title: 'Pet Types' },
                     { title: 'Breeds' },
+                    { title: 'Weight' },
                     { title: 'Status' },
                     { title: 'Priority' },
                     { title: 'Actions', alignment: 'end' },
                   ]}
-                  sortable={[true, true, true, true, true, true, false]}
+                  sortable={[true, true, true, true, false, true, true, false]}
                 >
                   {rowMarkup}
                 </IndexTable>
@@ -246,6 +297,52 @@ export default function RulesIndex() {
           </Card>
         </Layout.Section>
       </Layout>
+
+      <Modal
+        open={deleteModalActive}
+        onClose={toggleDeleteModal}
+        title="Delete Product Rule?"
+        primaryAction={{
+          content: 'Delete',
+          onAction: handleConfirmDelete,
+          destructive: true,
+        }}
+        secondaryActions={[
+          {
+            content: 'Cancel',
+            onAction: toggleDeleteModal,
+          },
+        ]}
+      >
+        <Modal.Section>
+          <Text as="p">
+            Are you sure you want to delete this product rule? This action cannot be undone.
+          </Text>
+        </Modal.Section>
+      </Modal>
+
+      <Modal
+        open={bulkDeleteActive}
+        onClose={toggleBulkDeleteModal}
+        title={`Delete ${selectedResources.length} Rules?`}
+        primaryAction={{
+          content: 'Delete',
+          onAction: handleConfirmBulkDelete,
+          destructive: true,
+        }}
+        secondaryActions={[
+          {
+            content: 'Cancel',
+            onAction: toggleBulkDeleteModal,
+          },
+        ]}
+      >
+        <Modal.Section>
+          <Text as="p">
+            Are you sure you want to delete the selected product rules? This action cannot be undone.
+          </Text>
+        </Modal.Section>
+      </Modal>
     </Page>
   );
 }
