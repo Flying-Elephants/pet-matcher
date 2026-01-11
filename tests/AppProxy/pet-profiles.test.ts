@@ -1,13 +1,14 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { action, loader } from "../../app/routes/app.pet-profiles";
 import { PetProfileService } from "../../app/modules/PetProfiles";
+import { BillingService } from "../../app/modules/Billing";
 import {
   createMockContext,
   createMockActionRequest,
   createMockLoaderRequest,
 } from "../utils";
 
-// Mock the PetProfileService to control data returned by the domain layer
+// Mock the PetProfileService
 vi.mock("../../app/modules/PetProfiles", async (importOriginal) => {
   const original: any = await importOriginal();
   return {
@@ -17,14 +18,22 @@ vi.mock("../../app/modules/PetProfiles", async (importOriginal) => {
       createProfile: vi.fn(),
       updateProfile: vi.fn(),
       deleteProfile: vi.fn(),
-      getSettings: vi.fn().mockResolvedValue({ types: [] }), // Mock getSettings
+      getSettings: vi.fn().mockResolvedValue({ types: [] }),
+      getMatchesForProduct: vi.fn(),
     },
-    CreatePetProfileSchema: { parse: (data: any) => data }, // Mock Zod to simply return data
-    UpdatePetProfileSchema: { parse: (data: any) => data }, // Mock Zod to simply return data
+    CreatePetProfileSchema: { parse: (data: any) => data },
+    UpdatePetProfileSchema: { parse: (data: any) => data },
   };
 });
 
-// Mock the Shopify authenticate utility, which is now done in tests/utils.ts
+// Mock BillingService
+vi.mock("../../app/modules/Billing", () => ({
+  BillingService: {
+    isUnderLimit: vi.fn().mockResolvedValue(true),
+  },
+}));
+
+// Mock the Shopify authenticate utility
 vi.mock("../../app/shopify.server", () => ({
   authenticate: {
     public: {
@@ -38,10 +47,15 @@ vi.mock("../../app/shopify.server", () => ({
 const MOCK_SHOP = "test-shop.myshopify.com";
 const MOCK_CUSTOMER_ID = "8005291409477";
 const MOCK_PROFILE_ID = "pet-uuid-123";
-const LOADER_URL = `/?logged_in_customer_id=${MOCK_CUSTOMER_ID}`;
+const LOADER_URL = `https://test.com/app/pet-profiles?logged_in_customer_id=${MOCK_CUSTOMER_ID}`;
 const ACTION_URL = LOADER_URL;
 
 describe("App Proxy: proxy.pet-profiles.tsx", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(BillingService.isUnderLimit).mockResolvedValue(true);
+  });
+
   describe("Loader", () => {
     it("should return profiles for a logged-in customer", async () => {
       const mockProfiles = [{ id: MOCK_PROFILE_ID, name: "Buddy" }];
@@ -62,7 +76,7 @@ describe("App Proxy: proxy.pet-profiles.tsx", () => {
     });
 
     it("should return 403 if customerId is missing", async () => {
-      const request = createMockLoaderRequest("/"); // URL without customerId
+      const request = createMockLoaderRequest("https://test.com/app/pet-profiles");
       const context = createMockContext({ request });
       
       const response = await loader(context as any);
@@ -70,6 +84,18 @@ describe("App Proxy: proxy.pet-profiles.tsx", () => {
 
       expect(response.status).toBe(403);
       expect(body.error).toBe("Customer not logged in");
+    });
+
+    it("should return empty state if over billing limit", async () => {
+      vi.mocked(BillingService.isUnderLimit).mockResolvedValue(false);
+      const request = createMockLoaderRequest(LOADER_URL);
+      const context = createMockContext({ request });
+      
+      const response = await loader(context as any);
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.disabled).toBe(true);
     });
   });
 
@@ -152,16 +178,16 @@ describe("App Proxy: proxy.pet-profiles.tsx", () => {
       expect(body.error).toBe("Invalid intent");
     });
 
-    it("should return 403 if customerId is missing", async () => {
-      const request = createMockActionRequest("/", { intent: "create" }); // URL without customerId
+    it("should return 403 if over billing limit", async () => {
+      vi.mocked(BillingService.isUnderLimit).mockResolvedValue(false);
+      const request = createMockActionRequest(ACTION_URL, { intent: "create" });
       const context = createMockContext({ request });
 
       const response = await action(context as any);
       const body = await response.json();
 
       expect(response.status).toBe(403);
-      expect(body.error).toBe("Customer not logged in");
+      expect(body.error).toContain("Plan limit reached");
     });
   });
 });
-

@@ -79,10 +79,10 @@ export default function Settings() {
         <Layout.Section>
           <Card>
             <BlockStack gap="400">
-              <Text as="h2" variant="headingMd">Pet Profile Settings</Text>
+              <Text as="h2" variant="headingMd">Retention Engine: Profile Settings</Text>
               <FormLayout>
                 <Select
-                  label="Weight Unit"
+                  label="Weight Unit (for Perfect Fit Logic)"
                   options={[
                     { label: "Kilograms (kg)", value: "kg" },
                     { label: "Pounds (lbs)", value: "lbs" },

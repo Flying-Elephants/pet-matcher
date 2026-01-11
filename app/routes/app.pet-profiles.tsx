@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
 import { PetProfileService, CreatePetProfileSchema, UpdatePetProfileSchema } from "../modules/PetProfiles";
+import { BillingService } from "../modules/Billing";
 
 // Helper to ensure consistent JSON responses with correct headers
 const jsonResponse = (data: any, status = 200) => {
@@ -22,6 +23,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     
     if (!session) {
       return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
+    // Billing Gate: Check if the shop is under their match limit
+    const isUnderLimit = await BillingService.isUnderLimit(session.shop);
+    if (!isUnderLimit) {
+      return jsonResponse({
+        profiles: [],
+        matches: [],
+        settings: { types: [] },
+        activePetId: null,
+        disabled: true
+      });
     }
 
     const url = new URL(request.url);
@@ -70,6 +83,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     if (!session) {
       return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
+    // Billing Gate: Prevent actions if limit reached
+    const isUnderLimit = await BillingService.isUnderLimit(session.shop);
+    if (!isUnderLimit) {
+      return jsonResponse({ error: "Plan limit reached. Storefront features are disabled." }, 403);
     }
 
     const url = new URL(request.url);

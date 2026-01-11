@@ -102,12 +102,26 @@ export default function RuleDetail() {
   const [productIds, setProductIds] = useState<string[]>(rule?.productIds || []);
   const [displayProducts, setDisplayProducts] = useState(initialProductData || []);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [breedQuery, setBreedQuery] = useState("");
+  const [typeQuery, setTypeQuery] = useState("");
+
+  const filteredTypes = useMemo(() => {
+    const query = typeQuery.toLowerCase();
+    return settings.types.filter((t: any) =>
+      t.label.toLowerCase().includes(query)
+    );
+  }, [settings.types, typeQuery]);
 
   const availableBreeds = useMemo(() => {
+    const query = breedQuery.toLowerCase();
     return settings.types
       .filter((t: any) => selectedTypes.length === 0 || selectedTypes.includes(t.label))
-      .flatMap((t: any) => t.breeds.map((b: any) => ({ type: t.label, breed: b })));
-  }, [settings, selectedTypes]);
+      .flatMap((t: any) => t.breeds.map((b: any) => ({ type: t.label, breed: b })))
+      .filter((item: any) =>
+        item.breed.toLowerCase().includes(query) ||
+        item.type.toLowerCase().includes(query)
+      );
+  }, [settings, selectedTypes, breedQuery]);
 
   const handleSave = () => {
     const newErrors: Record<string, string> = {};
@@ -193,10 +207,10 @@ export default function RuleDetail() {
 
   return (
     <Page
-      backAction={{ content: 'Rules', onAction: () => navigate('/app/rules') }}
-      title={rule ? `Edit ${rule.name}` : "New Product Rule"}
+      backAction={{ content: 'Logic Engine', onAction: () => navigate('/app/rules') }}
+      title={rule ? `Edit ${rule.name}` : "New Perfect Fit Rule"}
       primaryAction={{
-        content: 'Save',
+        content: 'Save Logic',
         onAction: handleSave,
         loading: isSaving
       }}
@@ -219,7 +233,7 @@ export default function RuleDetail() {
           <BlockStack gap="500">
             <Card padding="400">
               <BlockStack gap="400">
-                <Text variant="headingMd" as="h2">Basic Information</Text>
+                <Text variant="headingMd" as="h2">Rule Configuration</Text>
                 <TextField 
                   label="Rule Name" 
                   value={name} 
@@ -227,14 +241,14 @@ export default function RuleDetail() {
                   autoComplete="off" 
                   error={errors.name || (actionData?.error && (actionData.error.includes("name") || actionData.error.includes("required")) ? actionData.error : undefined)}
                 />
-                <TextField label="Priority" type="number" value={priority} onChange={setPriority} autoComplete="off" helpText="Higher priority rules match first." />
+                <TextField label="Logic Priority" type="number" value={priority} onChange={setPriority} autoComplete="off" helpText="Higher priority logic matches take precedence." />
                 <Checkbox label="Active" checked={isActive} onChange={setIsActive} />
               </BlockStack>
             </Card>
 
             <Card padding="400">
               <BlockStack gap="400">
-                <Text variant="headingMd" as="h2">Conditions</Text>
+                <Text variant="headingMd" as="h2">Perfect Fit Logic</Text>
                 {errors.weight && (
                   <Banner tone="critical">
                     <p>{errors.weight}</p>
@@ -243,18 +257,32 @@ export default function RuleDetail() {
                 <InlineStack gap="500" align="start">
                   <Box width="200px">
                     <BlockStack gap="200">
-                      <Text variant="headingSm" as="h3">Pet Types</Text>
+                      <Text variant="headingSm" as="h3">Breed Logic Types</Text>
+                      <TextField
+                        label="Filter Types"
+                        labelHidden
+                        value={typeQuery}
+                        onChange={(val) => setTypeQuery(val)}
+                        placeholder="Search types..."
+                        autoComplete="off"
+                      />
                       <Box padding="200" borderStyle="solid" borderWidth="025" borderColor="border" borderRadius="200">
                         <Scrollable style={{ height: '300px' }}>
                           <BlockStack gap="100">
-                            {settings.types.map((t: any) => (
-                              <Checkbox
-                                key={t.label}
-                                label={t.label}
-                                checked={selectedTypes.includes(t.label)}
-                                onChange={() => toggleType(t.label)}
-                              />
-                            ))}
+                            {filteredTypes.length === 0 ? (
+                              <Box padding="200">
+                                <Text as="p" tone="subdued" alignment="center">No types found.</Text>
+                              </Box>
+                            ) : (
+                              filteredTypes.map((t: any) => (
+                                <Checkbox
+                                  key={t.label}
+                                  label={t.label}
+                                  checked={selectedTypes.includes(t.label)}
+                                  onChange={() => toggleType(t.label)}
+                                />
+                              ))
+                            )}
                           </BlockStack>
                         </Scrollable>
                       </Box>
@@ -262,18 +290,32 @@ export default function RuleDetail() {
                   </Box>
                   <Box width="300px">
                     <BlockStack gap="200">
-                      <Text variant="headingSm" as="h3">Specific Breeds</Text>
+                      <Text variant="headingSm" as="h3">Smart Breed Matching</Text>
+                      <TextField
+                        label="Filter Breeds"
+                        labelHidden
+                        value={breedQuery}
+                        onChange={(val) => setBreedQuery(val)}
+                        placeholder="Search breeds..."
+                        autoComplete="off"
+                      />
                       <Box padding="200" borderStyle="solid" borderWidth="025" borderColor="border" borderRadius="200">
                         <Scrollable style={{ height: '300px' }}>
                           <BlockStack gap="100">
-                            {availableBreeds.map((item: any) => (
-                              <Checkbox
-                                key={`${item.type}-${item.breed}`}
-                                label={`${item.type}: ${item.breed}`}
-                                checked={selectedBreeds.includes(item.breed)}
-                                onChange={() => toggleBreed(item.breed)}
-                              />
-                            ))}
+                            {availableBreeds.length === 0 ? (
+                              <Box padding="200">
+                                <Text as="p" tone="subdued" alignment="center">No breeds found matching your filter.</Text>
+                              </Box>
+                            ) : (
+                              availableBreeds.map((item: any) => (
+                                <Checkbox
+                                  key={`${item.type}-${item.breed}`}
+                                  label={`${item.type}: ${item.breed}`}
+                                  checked={selectedBreeds.includes(item.breed)}
+                                  onChange={() => toggleBreed(item.breed)}
+                                />
+                              ))
+                            )}
                           </BlockStack>
                         </Scrollable>
                       </Box>
@@ -282,7 +324,7 @@ export default function RuleDetail() {
                 </InlineStack>
 
                 <BlockStack gap="200">
-                  <Text variant="headingSm" as="h3">Weight Range ({settings.weightUnit || 'kg'})</Text>
+                  <Text variant="headingSm" as="h3">Weight Normalization ({settings.weightUnit || 'kg'})</Text>
                   <InlineStack gap="400">
                     <Box width="150px">
                       <TextField

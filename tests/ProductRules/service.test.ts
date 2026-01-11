@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ProductRuleService } from "../../app/modules/ProductRules";
 import { ProductRuleDb } from "../../app/modules/ProductRules/internal/db";
+import { BillingService } from "../../app/modules/Billing";
 
 vi.mock("../../app/modules/ProductRules/internal/db", () => ({
   ProductRuleDb: {
@@ -10,6 +11,13 @@ vi.mock("../../app/modules/ProductRules/internal/db", () => ({
     findByName: vi.fn(),
     upsert: vi.fn(),
     delete: vi.fn(),
+    count: vi.fn(),
+  },
+}));
+
+vi.mock("../../app/modules/Billing", () => ({
+  BillingService: {
+    getSubscriptionStatus: vi.fn(),
   },
 }));
 
@@ -18,6 +26,12 @@ describe("ProductRuleService", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(BillingService.getSubscriptionStatus).mockResolvedValue({
+      plan: "FREE",
+      usage: 0,
+      limits: { maxRules: 5, maxMatches: 100 } as any,
+    });
+    vi.mocked(ProductRuleDb.count).mockResolvedValue(0);
   });
 
   it("should match products based on pet type", async () => {

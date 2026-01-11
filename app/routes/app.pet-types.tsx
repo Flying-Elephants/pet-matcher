@@ -81,7 +81,10 @@ export default function PetTypesPage() {
   }, [fetcher.data, shopify]);
 
   const handleSave = () => {
-    const newSettings: PetSettings = { types };
+    const newSettings: PetSettings = {
+      types,
+      weightUnit: settings.weightUnit || "kg"
+    };
     fetcher.submit({ settings: JSON.stringify(newSettings) }, { method: "post" });
   };
 
@@ -155,9 +158,9 @@ export default function PetTypesPage() {
 
   return (
     <Page
-      title="Pet Breeds & Types"
+      title="Breed Logic Configurator"
       primaryAction={{
-        content: "Save",
+        content: "Save Configuration",
         onAction: handleSave,
         loading: isLoading,
         disabled: !dirty,
@@ -170,7 +173,7 @@ export default function PetTypesPage() {
           onAction: () => setGuideActive(true),
         },
         {
-          content: "Add Pet Type",
+          content: "New Breed Logic",
           icon: PlusIcon,
           onAction: () => openModal(null),
         }      
@@ -186,11 +189,11 @@ export default function PetTypesPage() {
           <Card padding="0">
             {types.length === 0 ? (
               <EmptyState
-                heading="No pet types defined"
-                action={{ content: "Add Pet Type", onAction: () => openModal(null) }}
+                heading="No Breed Logic Configured"
+                action={{ content: "New Breed Logic", onAction: () => openModal(null) }}
                 image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
               >
-                <p>Create pet types (like Dog, Cat) to allow customers to create profiles.</p>
+                <p>Configure smart breed logic (e.g. Dog, Cat) to power the Perfect Fit engine.</p>
               </EmptyState>
             ) : (
               <ResourceList
@@ -233,7 +236,7 @@ export default function PetTypesPage() {
       <Modal
         open={activeModal}
         onClose={closeModal}
-        title={editingType?.label ? `Edit ${editingType.label}` : "Add Pet Type"}
+        title={editingType?.label ? `Edit ${editingType.label} Logic` : "New Breed Logic"}
         primaryAction={{
           content: "Done",
           onAction: handleModalSave,

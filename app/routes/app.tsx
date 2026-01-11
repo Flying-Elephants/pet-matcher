@@ -26,9 +26,12 @@ export default function App() {
         <ui-nav-menu>
           <a href="/app" rel="home">Home</a>
           <a href="/app/dashboard">Dashboard</a>
-          <a href="/app/pet-types">Pet Types</a>
-          <a href="/app/rules">Product Rules</a>
+          <a href="/app/pet-types">Breed Logic</a>
+          <a href="/app/pet-profiles-admin">Retention Center</a>
+          <a href="/app/rules">Logic Engine</a>
+          <a href="/app/billing">Billing</a>
           <a href="/app/settings">Settings</a>
+          
         </ui-nav-menu>
         <Outlet />
       </PolarisProvider>

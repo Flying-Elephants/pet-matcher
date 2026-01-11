@@ -219,16 +219,22 @@
 
                 <div class="pp-form-group">
                    <label for="pet-type" class="pp-label">Pet Type</label>
-                   <select id="pet-type" name="type" class="pp-input" required>
-                     <option value="" disabled selected>Select a pet type</option>
-                   </select>
+                   <div class="pp-searchable-select">
+                     <input type="text" id="pet-type-search" class="pp-input pp-search-input" placeholder="Search pet types...">
+                     <select id="pet-type" name="type" class="pp-input" required size="5" style="display: none;">
+                       <option value="" disabled selected>Select a pet type</option>
+                     </select>
+                   </div>
                 </div>
 
                 <div class="pp-form-group">
                   <label for="pet-breed" class="pp-label">Breed</label>
-                  <select id="pet-breed" name="breed" class="pp-input" required disabled>
-                    <option value="" disabled selected>Select a breed</option>
-                  </select>
+                  <div class="pp-searchable-select">
+                    <input type="text" id="pet-breed-search" class="pp-input pp-search-input" placeholder="Search breeds..." disabled>
+                    <select id="pet-breed" name="breed" class="pp-input" required disabled size="5" style="display: none;">
+                      <option value="" disabled selected>Select a breed</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div class="pp-form-group">
@@ -294,7 +300,7 @@
       "type": "text",
       "id": "trigger_label",
       "label": "Button Label",
-      "default": "My Pets",
+      "default": "Perfect Fit Quiz",
       "info": "Text displayed on the floating action button"
     },
     {
@@ -435,13 +441,13 @@
       "type": "text",
       "id": "welcome_title",
       "label": "Welcome Title",
-      "default": "Welcome to Pet Matcher!"
+      "default": "Find the Perfect Fit"
     },
     {
       "type": "textarea",
       "id": "welcome_text",
       "label": "Welcome Description",
-      "default": "Create a profile for your furry friend to get personalized product recommendations."
+      "default": "Our smart logic engine matches your pet to the perfect products based on breed, weight, and age."
     },
     {
       "type": "text",
@@ -464,13 +470,13 @@
       "type": "text",
       "id": "login_title",
       "label": "Login Title",
-      "default": "Join Pet Matcher"
+      "default": "Unlock Personalization"
     },
     {
       "type": "textarea",
       "id": "login_text",
       "label": "Login Description",
-      "default": "Log in to create profiles for your pets and unlock personalized product matches."
+      "default": "Log in to start the Perfect Fit Quiz and get smart breed recommendations."
     },
     {
       "type": "text",
@@ -493,13 +499,13 @@
       "type": "text",
       "id": "manage_title",
       "label": "Dashboard Title",
-      "default": "My Pet Profiles"
+      "default": "Retention Center"
     },
     {
       "type": "textarea",
       "id": "manage_subtitle",
       "label": "Dashboard Subtitle",
-      "default": "Manage your pets to get personalized recommendations."
+      "default": "The 'Perfect Fit' guarantee for all your pets."
     },
     {
       "type": "text",

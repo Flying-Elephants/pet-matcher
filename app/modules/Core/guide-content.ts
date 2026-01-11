@@ -2,15 +2,15 @@ import type { GuideContent } from "../../components/PageGuide";
 
 export const GUIDE_CONTENT: Record<string, GuideContent> = {
   home: {
-    title: "Welcome to Pet-Matcher",
+    title: "Pet Matcher: Product & Breed Quiz",
     sections: [
       {
-        heading: "Overview",
-        content: "Pet-Matcher helps you provide personalized product recommendations based on your customers' pets.",
+        heading: "The Perfect Fit",
+        content: "Turn uncertainty into adoption with the 'Perfect Fit' guarantee. Match pets to products based on breed, weight, and age.",
       },
       {
-        heading: "Getting Started",
-        content: "Start by configuring your Pet Types and then create Product Rules to link products to specific pet attributes.",
+        heading: "Fit & Forget Sync",
+        content: "Our logic engine auto-syncs with your catalog using Bulk Operations to ensure recommendations are always up-to-date.",
       },
     ],
   },
@@ -37,15 +37,15 @@ export const GUIDE_CONTENT: Record<string, GuideContent> = {
     ],
   },
   rules: {
-    title: "Product Rules Guide",
+    title: "Logic Engine: Product Rules",
     sections: [
       {
-        heading: "Creating Rules",
-        content: "Rules determine which products are shown to which pets. You can match by breed, age, or specific pet needs.",
+        heading: "Smart Breed Logic",
+        content: "Create rules that match products to 200+ breeds, specific weights, and age ranges to boost AOV.",
       },
       {
-        heading: "Rule Priority",
-        content: "If multiple rules match, the most specific rule will take precedence.",
+        heading: "Fit Guarantee",
+        content: "Ensure every customer finds the perfect match, reducing returns and building trust.",
       },
     ],
   },
@@ -55,6 +55,32 @@ export const GUIDE_CONTENT: Record<string, GuideContent> = {
       {
         heading: "App Configuration",
         content: "Manage your shop details and global app preferences here.",
+      },
+    ],
+  },
+  petProfiles: {
+    title: "Retention Engine: Pet Profiles",
+    sections: [
+      {
+        heading: "Birthday Marketing",
+        content: "Capture birthdays and 'Gotcha Days' to power personalized retention marketing and boost customer loyalty.",
+      },
+      {
+        heading: "Personalization Data",
+        content: "Deep insights into your customers' pets, allowing you to provide a truly tailored shopping experience.",
+      },
+    ],
+  },
+  billing: {
+    title: "Plans & Billing Guide",
+    sections: [
+      {
+        heading: "Subscription Tiers",
+        content: "Choose a plan that fits your store's volume. Each tier increases your monthly match token limit and unlocks advanced features like Klaviyo integration.",
+      },
+      {
+        heading: "Match Tokens",
+        content: "Tokens are consumed each time the matching engine successfully recommends products to a customer. Your usage resets at the start of your billing cycle.",
       },
     ],
   },

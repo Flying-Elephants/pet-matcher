@@ -68,5 +68,26 @@ export const PetProfileService = {
 
   updateSettings: async (shop: string, settings: PetSettings): Promise<PetSettings> => {
     return SettingsService.updateSettings(shop, settings);
+  },
+
+  // Admin Listing
+  getAllProfiles: async (
+    shop: string,
+    options?: {
+      sortKey?: string,
+      sortDirection?: "asc" | "desc",
+      query?: string,
+      page?: number,
+      limit?: number
+    }
+  ): Promise<{ profiles: PetProfile[], totalCount: number }> => {
+    const skip = options?.page && options?.limit ? (options.page - 1) * options.limit : undefined;
+    const take = options?.limit;
+    
+    return PetProfileDb.findAllByShop(shop, {
+      ...options,
+      skip,
+      take
+    });
   }
 };

@@ -1,5 +1,6 @@
 import { ProductRuleDb } from "./internal/db";
 import { BulkOperationService } from "./internal/bulk";
+import { BillingService } from "../Billing";
 import type { AdminApiContext } from "@shopify/shopify-app-react-router/server";
 import type { ProductRule, RuleConditions, RuleSortOptions, RuleListOptions } from "./core/types";
 
@@ -7,7 +8,7 @@ export * from "./core/types";
 
 export const ProductRuleService = {
   getRules: async (shop: string, options?: RuleListOptions): Promise<{ rules: ProductRule[], totalCount: number }> => {
-    const { sort, page, limit } = options || {};
+    const { sort, page, limit, query } = options || {};
     
     let rules: ProductRule[];
     let totalCount: number;
@@ -16,11 +17,11 @@ export const ProductRuleService = {
       const skip = (page - 1) * limit;
       const take = limit;
       [rules, totalCount] = await Promise.all([
-        ProductRuleDb.findMany(shop, { skip, take }),
-        ProductRuleDb.count(shop)
+        ProductRuleDb.findMany(shop, { skip, take, query }),
+        ProductRuleDb.count(shop, { query })
       ]);
     } else {
-      rules = await ProductRuleDb.findMany(shop);
+      rules = await ProductRuleDb.findMany(shop, { query });
       totalCount = rules.length;
     }
 
@@ -76,6 +77,14 @@ export const ProductRuleService = {
   },
   
   upsertRule: async (shop: string, data: Partial<ProductRule>): Promise<ProductRule> => {
+    // 1. Billing Gate
+    const status = await BillingService.getSubscriptionStatus({} as any, shop); // Mocking admin since we only need DB session
+    const currentCount = await ProductRuleDb.count(shop);
+    
+    if (!data.id && currentCount >= status.limits.maxRules) {
+      throw new Error(`Your ${status.plan} plan is limited to ${status.limits.maxRules} rules. Please upgrade to create more.`);
+    }
+
     if (!data.name || data.name.trim() === "") {
       throw new Error("Rule name is required.");
     }

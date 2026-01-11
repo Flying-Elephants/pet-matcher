@@ -1,4 +1,4 @@
-import { Modal, Text, BlockStack } from "@shopify/polaris";
+import { Modal, Text, BlockStack, Box } from "@shopify/polaris";
 import { useCallback } from "react";
 
 export interface GuideSection {
@@ -30,12 +30,12 @@ export function PageGuide({ content, active, onClose }: PageGuideProps) {
         onAction: toggleModal,
       }}
     >
-      <Modal.Section>
+      <Box padding="400">
         <BlockStack gap="400">
           {content.sections.map((section, index) => (
             <BlockStack gap="200" key={index}>
               {section.heading && (
-                <Text as="h3" variant="headingSm">
+                <Text as="h3" variant="headingSm" fontWeight="bold">
                   {section.heading}
                 </Text>
               )}
@@ -45,7 +45,7 @@ export function PageGuide({ content, active, onClose }: PageGuideProps) {
             </BlockStack>
           ))}
         </BlockStack>
-      </Modal.Section>
+      </Box>
     </Modal>
   );
 }

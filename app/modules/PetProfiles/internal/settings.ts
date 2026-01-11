@@ -1,5 +1,6 @@
 import prisma from "../../../db.server";
 import { PetSettings, PetTypeConfig } from "../core/types";
+import { BREED_SEED_DATA } from "./seed";
 
 // Simple in-memory cache
 // Map<shop, { settings: PetSettings, timestamp: number }>
@@ -7,39 +8,8 @@ const settingsCache = new Map<string, { settings: PetSettings; timestamp: number
 const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
 const DEFAULT_SETTINGS: PetSettings = {
-  types: [
-    {
-      id: "dog",
-      label: "Dog",
-      breeds: [
-        "Mixed Breed",
-        "Golden Retriever",
-        "Labrador",
-        "French Bulldog",
-        "German Shepherd",
-        "Poodle",
-        "Chihuahua",
-        "Beagle",
-        "Rottweiler",
-        "Dachshund",
-      ],
-    },
-    {
-      id: "cat",
-      label: "Cat",
-      breeds: [
-        "Mixed Breed",
-        "Domestic Short Hair",
-        "Maine Coon",
-        "Siamese",
-        "Persian",
-        "Ragdoll",
-        "Bengal",
-        "Sphynx",
-        "British Shorthair",
-      ],
-    },
-  ],
+  types: BREED_SEED_DATA,
+  weightUnit: "kg",
 };
 
 export const SettingsService = {

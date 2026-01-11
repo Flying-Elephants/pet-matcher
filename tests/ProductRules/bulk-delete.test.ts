@@ -34,7 +34,7 @@ describe("ProductRuleService Bulk Deletion", () => {
     const result = await ProductRuleService.getRules(shop, { page: 2, limit: 5 });
 
     expect(ProductRuleDb.findMany).toHaveBeenCalledWith(shop, { skip: 5, take: 5 });
-    expect(ProductRuleDb.count).toHaveBeenCalledWith(shop);
+    expect(ProductRuleDb.count).toHaveBeenCalledWith(shop, { query: undefined });
     expect(result.rules).toEqual(mockRules);
     expect(result.totalCount).toBe(10);
   });

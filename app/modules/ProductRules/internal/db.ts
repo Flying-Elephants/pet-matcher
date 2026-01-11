@@ -2,20 +2,28 @@ import db from "../../../db.server";
 import type { ProductRule, RuleConditions } from "../core/types";
 
 export const ProductRuleDb = {
-  async findMany(shop: string, options?: { skip?: number; take?: number }): Promise<ProductRule[]> {
+  async findMany(shop: string, options?: { skip?: number; take?: number; query?: string }): Promise<ProductRule[]> {
+    const { skip, take, query } = options || {};
+    const where: any = { shop };
+    if (query) {
+      where.name = { contains: query };
+    }
+
     const rules = await db.productRule.findMany({
-      where: { shop },
+      where,
       orderBy: { priority: "desc" },
-      skip: options?.skip,
-      take: options?.take,
+      skip,
+      take,
     });
     return rules.map((r) => this.mapToDomain(r));
   },
 
-  async count(shop: string): Promise<number> {
-    return db.productRule.count({
-      where: { shop },
-    });
+  async count(shop: string, options?: { query?: string }): Promise<number> {
+    const where: any = { shop };
+    if (options?.query) {
+      where.name = { contains: options.query };
+    }
+    return db.productRule.count({ where });
   },
 
   async findActive(shop: string): Promise<ProductRule[]> {

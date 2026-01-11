@@ -1,10 +1,26 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useLoaderData, useNavigate, useSubmit, redirect, useSearchParams } from "react-router";
-import { Page, Layout, Card, Text, Badge, InlineStack, BlockStack, EmptyState, Button, IndexTable, useIndexResourceState, Pagination, Modal } from "@shopify/polaris";
+import { 
+  Page, 
+  Layout, 
+  Card, 
+  Text, 
+  Badge, 
+  InlineStack, 
+  BlockStack, 
+  EmptyState, 
+  Button, 
+  IndexTable, 
+  useIndexResourceState, 
+  Pagination, 
+  Modal,
+  IndexFilters,
+  useSetIndexFiltersMode
+} from "@shopify/polaris";
 import { InfoIcon } from "@shopify/polaris-icons";
 import { useState, useCallback } from "react";
 import { authenticate } from "../shopify.server";
-import { ProductRuleService, type RuleSortKey, type RuleConditions } from "../modules/ProductRules";
+import { ProductRuleService, type RuleSortKey } from "../modules/ProductRules";
 import { PetProfileService } from "../modules/PetProfiles";
 import { WeightUtils } from "../modules/Core/WeightUtils";
 import { PageGuide } from "../components/PageGuide";
@@ -16,6 +32,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const sortKey = (url.searchParams.get("sortKey") as RuleSortKey) || "priority";
   const sortDirection = (url.searchParams.get("sortDirection") as "asc" | "desc") || "desc";
+  const query = url.searchParams.get("query") || "";
   const page = parseInt(url.searchParams.get("page") || "1", 10);
   const limit = 20;
 
@@ -25,6 +42,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         key: sortKey,
         direction: sortDirection,
       },
+      query,
       page,
       limit,
     }),
@@ -37,6 +55,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     settings,
     sortKey, 
     sortDirection, 
+    query,
     page, 
     limit 
   };
@@ -73,13 +92,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function RulesIndex() {
-  const { rules, totalCount, settings, sortKey, sortDirection, page, limit } = useLoaderData<typeof loader>();
+  const { rules, totalCount, settings, sortKey, sortDirection, query, page, limit } = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [guideActive, setGuideActive] = useState(false);
   const submit = useSubmit();
   const navigate = useNavigate();
 
   const weightUnit = settings.weightUnit || "kg";
+
+  const [queryValue, setQueryValue] = useState(query);
+  const { mode, setMode } = useSetIndexFiltersMode();
 
   const [deleteModalActive, setDeleteModalActive] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -112,6 +134,22 @@ export default function RulesIndex() {
     toggleBulkDeleteModal();
   };
 
+  const onHandleSearchChange = useCallback((value: string) => {
+    setQueryValue(value);
+    const params = new URLSearchParams(searchParams);
+    if (value) {
+      params.set("query", value);
+    } else {
+      params.delete("query");
+    }
+    params.set("page", "1");
+    setSearchParams(params);
+  }, [searchParams, setSearchParams]);
+
+  const onHandleSearchClear = useCallback(() => {
+    onHandleSearchChange("");
+  }, [onHandleSearchChange]);
+
   const promotedBulkActions = [
     {
       content: 'Delete rules',
@@ -121,11 +159,11 @@ export default function RulesIndex() {
 
   const emptyStateMarkup = (
     <EmptyState
-      heading="Create your first product rule"
+      heading="Create your first logic engine rule"
       action={{ content: 'Create Rule', onAction: () => navigate('/app/rules/new') }}
       image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
     >
-      <p>Target specific products based on pet types and breeds.</p>
+      <p>The logic engine matches pets to products based on breed, weight, and age. Reduce returns and boost AOV.</p>
     </EmptyState>
   );
 
@@ -187,7 +225,7 @@ export default function RulesIndex() {
         </IndexTable.Cell>
         <IndexTable.Cell>{priority}</IndexTable.Cell>
         <IndexTable.Cell>
-          <InlineStack gap="200">
+          <InlineStack gap="200" align="end">
             <Button
               size="slim"
               onClick={() => navigate(`/app/rules/${id}`)}
@@ -238,8 +276,8 @@ export default function RulesIndex() {
   };
 
   return (
-    <Page 
-      title="Product Rules" 
+    <Page
+      title="Logic Engine: Product Rules"
       primaryAction={{ content: 'Create Rule', onAction: () => navigate('/app/rules/new') }}
       secondaryActions={[
         {
@@ -257,8 +295,27 @@ export default function RulesIndex() {
       <Layout>
         <Layout.Section>
           <Card padding="0">
-            {rules.length === 0 ? emptyStateMarkup : (
+            {rules.length === 0 && !query ? emptyStateMarkup : (
               <BlockStack>
+                <IndexFilters
+                  queryValue={queryValue}
+                  queryPlaceholder="Search rules"
+                  onQueryChange={onHandleSearchChange}
+                  onQueryClear={onHandleSearchClear}
+                  cancelAction={{
+                    onAction: onHandleSearchClear,
+                    disabled: false,
+                    loading: false,
+                  }}
+                  tabs={[]}
+                  selected={0}
+                  onSelect={() => {}}
+                  canCreateNewView={false}
+                  filters={[]}
+                  onClearAll={() => {}}
+                  mode={mode}
+                  setMode={setMode}
+                />
                 <IndexTable
                   resourceName={resourceName}
                   itemCount={rules.length}
@@ -301,7 +358,7 @@ export default function RulesIndex() {
       <Modal
         open={deleteModalActive}
         onClose={toggleDeleteModal}
-        title="Delete Product Rule?"
+        title="Delete Logic Engine Rule?"
         primaryAction={{
           content: 'Delete',
           onAction: handleConfirmDelete,

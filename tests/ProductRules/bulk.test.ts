@@ -5,6 +5,7 @@ describe("BulkOperationService", () => {
   it("should parse status correctly", async () => {
     const mockAdmin = {
       graphql: vi.fn().mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve({
           data: {
             currentBulkOperation: {
@@ -26,6 +27,7 @@ describe("BulkOperationService", () => {
   it("should handle null operation", async () => {
     const mockAdmin = {
       graphql: vi.fn().mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve({
           data: {
             currentBulkOperation: null

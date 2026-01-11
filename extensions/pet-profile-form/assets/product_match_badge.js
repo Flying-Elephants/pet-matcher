@@ -27,6 +27,11 @@
         
         const data = await response.json();
         
+        if (data.disabled) {
+          container.remove();
+          return;
+        }
+
         if (data.error) {
           console.error('Pet Matcher Proxy error:', data.error);
           container.remove();

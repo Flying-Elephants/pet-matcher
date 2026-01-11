@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+hdocument.addEventListener('DOMContentLoaded', function() {
   const container = document.querySelector('.pp-container');
   if (!container) return;
 
@@ -36,8 +36,51 @@ document.addEventListener('DOMContentLoaded', function() {
     formCancelBtn: document.getElementById('form-cancel-btn'),
     toastContainer: document.getElementById('pp-toast-container'),
     petTypeSelect: document.getElementById('pet-type'),
-    petBreedSelect: document.getElementById('pet-breed')
+    petBreedSelect: document.getElementById('pet-breed'),
+    petTypeSearch: document.getElementById('pet-type-search'),
+    petBreedSearch: document.getElementById('pet-breed-search')
   };
+
+  // --- Searchable Select Logic ---
+
+  function setupSearchableSelect(searchEl, selectEl, updateFn) {
+    if (!searchEl || !selectEl) return;
+
+    searchEl.addEventListener('focus', () => {
+        selectEl.style.display = 'block';
+    });
+
+    searchEl.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        Array.from(selectEl.options).forEach(option => {
+            if (option.disabled) return;
+            const text = option.textContent.toLowerCase();
+            option.style.display = text.includes(query) ? 'block' : 'none';
+        });
+    });
+
+    selectEl.addEventListener('change', (e) => {
+        searchEl.value = e.target.options[e.target.selectedIndex].textContent;
+        selectEl.style.display = 'none';
+        if (updateFn) updateFn(e.target.value);
+    });
+
+    // Close on click outside
+    document.addEventListener('click', (e) => {
+        if (!searchEl.contains(e.target) && !selectEl.contains(e.target)) {
+            selectEl.style.display = 'none';
+        }
+    });
+  }
+
+  setupSearchableSelect(elements.petTypeSearch, elements.petTypeSelect, (val) => {
+      updateBreedOptions(val);
+      if (elements.petBreedSearch) {
+          elements.petBreedSearch.value = '';
+          elements.petBreedSearch.disabled = false;
+      }
+  });
+  setupSearchableSelect(elements.petBreedSearch, elements.petBreedSelect);
 
   // --- Modal Logic ---
 
@@ -98,12 +141,6 @@ document.addEventListener('DOMContentLoaded', function() {
     elements.form.addEventListener('submit', handleFormSubmit);
   }
 
-  if (elements.petTypeSelect) {
-    elements.petTypeSelect.addEventListener('change', (e) => {
-        const selectedType = e.target.value;
-        updateBreedOptions(selectedType);
-    });
-  }
 
   // --- API Interactions ---
 
@@ -126,6 +163,13 @@ document.addEventListener('DOMContentLoaded', function() {
       settings = data.settings || { types: [] };
 
       populateTypeOptions();
+      
+      // Billing Gate: Hide trigger if disabled
+      if (data.disabled && modal.trigger) {
+        modal.trigger.style.display = 'none';
+        return; // Don't render anything else
+      }
+
       render();
     } catch (error) {
       console.error('Error fetching pet profiles:', error);
@@ -262,6 +306,11 @@ document.addEventListener('DOMContentLoaded', function() {
         elements.petBreedSelect.innerHTML = '<option value="" disabled selected>Select a breed</option>';
         elements.petBreedSelect.disabled = true;
     }
+    if (elements.petTypeSearch) elements.petTypeSearch.value = '';
+    if (elements.petBreedSearch) {
+        elements.petBreedSearch.value = '';
+        elements.petBreedSearch.disabled = true;
+    }
   }
 
   function editPet(id) {
@@ -272,8 +321,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('pet-name').value = pet.name;
     if (elements.petTypeSelect) {
         elements.petTypeSelect.value = pet.type || 'Dog';
+        if (elements.petTypeSearch) elements.petTypeSearch.value = pet.type || 'Dog';
     }
     updateBreedOptions(pet.type || 'Dog', pet.breed);
+    if (elements.petBreedSearch) {
+        elements.petBreedSearch.value = pet.breed;
+        elements.petBreedSearch.disabled = false;
+    }
     if (pet.birthday) {
         document.getElementById('pet-birthday').value = pet.birthday.split('T')[0];
     }

@@ -1,10 +1,17 @@
 import type { PetProfile, MatchResult } from "../core/types";
 import type { ProductRule, RuleConditions } from "../../ProductRules/core/types";
 import { AnalyticsService } from "../../Analytics";
-import { SessionService } from "../../Core/SessionService";
+import { BillingService } from "../../Billing";
 
 export const MatcherService = {
   async match(profile: PetProfile, rules: ProductRule[]): Promise<string[]> {
+    // 1. Billing Gate
+    const canMatch = await BillingService.isUnderLimit(profile.shop);
+    if (!canMatch) {
+      console.warn(`[MatcherService] Shop ${profile.shop} has reached match limits.`);
+      return [];
+    }
+
     const matchedProductIds = new Set<string>();
     let matchedRuleId: string | null = null;
 
@@ -23,13 +30,19 @@ export const MatcherService = {
     // Side Effects: Record Analytics & Increment Billing Usage
     if (matchedRuleId) {
       AnalyticsService.recordMatch(profile.shop, profile.id, matchedRuleId).catch(console.error);
-      SessionService.incrementMatchCount(profile.shop).catch(console.error);
+      BillingService.recordMatch(profile.shop).catch(console.error);
     }
 
     return Array.from(matchedProductIds);
   },
 
   async isProductMatched(profile: PetProfile, rules: ProductRule[], productId: string): Promise<MatchResult> {
+    // 1. Billing Gate
+    const canMatch = await BillingService.isUnderLimit(profile.shop);
+    if (!canMatch) {
+      return { petId: profile.id, isMatched: false, warnings: ["BILLING_LIMIT_REACHED"] };
+    }
+
     const activeRules = rules.filter(r => r.isActive);
     const rulesForProduct = activeRules.filter(r => r.productIds.includes(productId));
 
@@ -41,8 +54,8 @@ export const MatcherService = {
     const warnings: string[] = [];
 
     // Check for missing weight warning across all applicable rules for this product
-    const hasWeightRule = rulesForProduct.some(r => 
-      r.conditions.weightRange && 
+    const hasWeightRule = rulesForProduct.some(r =>
+      r.conditions.weightRange &&
       (r.conditions.weightRange.min != null || r.conditions.weightRange.max != null)
     );
     
@@ -57,7 +70,7 @@ export const MatcherService = {
       if (this.evaluateConditions(profile, rule.conditions)) {
         // Side Effects: Record Analytics & Increment Billing Usage
         AnalyticsService.recordMatch(profile.shop, profile.id, rule.id).catch(console.error);
-        SessionService.incrementMatchCount(profile.shop).catch(console.error);
+        BillingService.recordMatch(profile.shop).catch(console.error);
         return { petId: profile.id, isMatched: true, warnings };
       }
     }

@@ -10,6 +10,7 @@ describe("AnalyticsDb Integration", () => {
     await db.petProfile.deleteMany({ where: { shop } });
     await db.productRule.deleteMany({ where: { shop } });
     await db.syncedProduct.deleteMany({ where: { shop } });
+    await db.matchEvent.deleteMany({ where: { shop } });
   });
 
   it("should calculate correct summary counts", async () => {
@@ -38,6 +39,14 @@ describe("AnalyticsDb Integration", () => {
       ],
     });
 
+    // 4. Setup Match Events
+    await db.matchEvent.createMany({
+      data: [
+        { id: "m1", shop, profileId: "p1", ruleId: "r1" },
+        { id: "m2", shop, profileId: "p2", ruleId: "r1" },
+      ]
+    });
+
     // Execute
     const summary = await AnalyticsDb.getSummary(shop);
 
@@ -45,6 +54,7 @@ describe("AnalyticsDb Integration", () => {
     expect(summary.totalMatches).toBe(2);
     expect(summary.activeRules).toBe(1);
     expect(summary.syncedProductsCount).toBe(3);
+    expect(summary.totalPetProfiles).toBe(2);
   });
 
   it("should return zeros for a shop with no data", async () => {

@@ -41,8 +41,17 @@ export const BulkOperationService = {
     `;
 
     const response = await admin.graphql(query);
+
+    if (response.status === 302) {
+      throw response;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Bulk sync initiation failed: ${response.statusText}`);
+    }
+
     const json: any = await response.json();
-    
+
     if (json.errors) {
         throw new Error(json.errors.map((e: any) => e.message).join(", "));
     }
@@ -65,8 +74,17 @@ export const BulkOperationService = {
     `;
 
     const response = await admin.graphql(query, { variables: { id: productId } });
+
+    if (response.status === 302) {
+      throw response;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Single product sync fetch failed: ${response.statusText}`);
+    }
+
     const json: any = await response.json();
-    
+
     if (json.errors) {
         throw new Error(json.errors.map((e: any) => e.message).join(", "));
     }
@@ -151,18 +169,23 @@ export const BulkOperationService = {
       }
     `;
 
-    try {
-      const response = await admin.graphql(query);
-      const json: any = await response.json();
-      const operation = json.data?.currentBulkOperation || null;
-      
-      // Automatic Renew Logic: If a bulk operation just finished, we could trigger logic here,
-      // but standard practice is to let webhooks handle CRUD events as implemented.
-      
-      return operation;
-    } catch (e) {
-      console.error("Error fetching bulk operation status:", e);
+    const response = await admin.graphql(query);
+
+    if (response.status === 302) {
+      throw response;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Bulk status fetch failed: ${response.statusText}`);
+    }
+
+    const json: any = await response.json();
+
+    if (json.errors) {
+      console.error("GraphQL errors in getStatus:", json.errors);
       return null;
     }
+
+    return json.data?.currentBulkOperation || null;
   }
 };

@@ -66,4 +66,5 @@ export interface RuleListOptions {
   sort?: RuleSortOptions;
   page?: number;
   limit?: number;
+  query?: string;
 }

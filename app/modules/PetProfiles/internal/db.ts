@@ -23,6 +23,46 @@ export const PetProfileDb = {
     })) as PetProfile[];
   },
 
+  async findAllByShop(shop: string, options?: {
+    sortKey?: string,
+    sortDirection?: "asc" | "desc",
+    query?: string,
+    skip?: number,
+    take?: number
+  }): Promise<{ profiles: PetProfile[], totalCount: number }> {
+    const sortKey = options?.sortKey || "createdAt";
+    const sortDirection = options?.sortDirection || "desc";
+    const { query, skip, take } = options || {};
+
+    const where: any = { shop };
+    if (query) {
+      where.OR = [
+        { name: { contains: query } },
+        { breed: { contains: query } },
+        { type: { contains: query } },
+        { shopifyId: { contains: query } },
+      ];
+    }
+
+    const [profiles, totalCount] = await Promise.all([
+      db.petProfile.findMany({
+        where,
+        orderBy: { [sortKey]: sortDirection },
+        skip,
+        take,
+      }),
+      db.petProfile.count({ where })
+    ]);
+
+    return {
+      profiles: profiles.map((p) => ({
+        ...p,
+        attributes: JSON.parse(p.attributes),
+      })) as PetProfile[],
+      totalCount
+    };
+  },
+
   async create(shop: string, data: CreatePetProfileInput): Promise<PetProfile> {
     const profile = await db.petProfile.create({
       data: {

@@ -1,25 +1,33 @@
-# Feature Specification: Dynamic Sync/Process Button
+# Feature Specification: Dynamic Sync and Process Button Visibility
+
+The "Welcome" page (`app/routes/app._index.tsx`) currently shows the "Re-sync Products" button and "Process Sync" banner even when the system is already up-to-date. This blueprint outlines the changes to ensure these controls are hidden once synchronization and processing are fully completed, replaced by a "Synced" status indicator.
 
 ## Affected Domains
-- ProductRules (UI Layer)
+- ProductRules (Interface Layer)
 
 ## 1. Database Schema Changes (Prisma)
-No changes required.
+- No changes required.
 
 ## 2. Domain Service Interface (Public API)
-No changes required.
+- No changes required to `app/modules/ProductRules/index.ts`.
 
 ## 3. Interface Layer Requirements (Routes)
 ### app/routes/app._index.tsx
-- **Button Logic Update**: 
-    - When `isCompleted` is true (Shopify Bulk Operation finished):
-        - The primary action button should change from "Re-sync" to "Process Sync" (or "Apply to Database").
-        - Clicking this button should trigger `handleProcessSync` instead of `handleStartSync`.
-    - The "Re-sync" button should remain available as a secondary option if the user wants to restart the Shopify fetch instead of processing the current one.
+- **Current Logic**:
+  - `showSyncControls` is `true` if `!hasProducts || isSyncing || (isCompleted && syncStatus?.url)`.
+  - `isUpToDate` is `true` if `hasProducts && !isSyncing && (!isCompleted || !syncStatus?.url)`.
+  - `isCompleted` only checks for `COMPLETED` status from Shopify Bulk API but doesn't guarantee the data has been processed into our DB.
 
-- **UI Refinement**:
-    - Update the button labels and icons to clearly distinguish between "Fetching from Shopify" (Sync) and "Writing to Database" (Process).
+- **Refined Logic**:
+  - Hide all sync-initiating and sync-processing UI once the products are in the database and no active sync/process job is pending.
+  - Show a clear "Synced" state with a "Check for Updates" or similar hidden/secondary action if needed, but the primary view should be clean.
+  
+- **UI Changes**:
+  - Update `isUpToDate` calculation to accurately reflect when products exist and no action is needed.
+  - Conditionally render the `Banner` for "Process Sync" and the `Button` for "Start Sync" based on `!isUpToDate`.
+  - Add an "Update Catalog" secondary button or keep the "Re-sync" only if the user explicitly wants to force a refresh, but hide it from the primary onboarding flow once "Synced".
 
 ## 4. Constraints & Edge Cases
-- **State Consistency**: Ensure `isCompleted` and `hasProducts` correctly reflect the state where a file is ready to be processed but hasn't been written to the database yet.
-- **Loading States**: Maintain independent loading states for `START_SYNC` vs `PROCESS_SYNC`.
+- **Empty Catalog**: Must always show sync button if `hasProducts` is false.
+- **Partial Sync**: If `isCompleted` (Shopify finished) but `url` exists, we MUST show "Process Sync" because the data isn't in our DB yet.
+- **Post-Process State**: After `PROCESS_SYNC` action succeeds, `isUpToDate` should become true, hiding the banners and buttons.
