@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { data, useLoaderData, useSearchParams, useSubmit, useNavigate } from "react-router";
+import { data, useLoaderData, useSearchParams, useSubmit, useNavigate, useNavigation } from "react-router";
 import {
   Page,
   Layout,
@@ -23,6 +23,7 @@ import { z } from "zod";
 import { PageGuide } from "../components/PageGuide";
 import { GUIDE_CONTENT } from "../modules/Core/guide-content";
 import { InfoIcon } from "@shopify/polaris-icons";
+import { SkeletonTablePage } from "../components/SkeletonTablePage";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
@@ -118,7 +119,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function PetProfilesAdmin() {
-  const { profiles, totalCount, customerNames, sortKey, sortDirection, query, page, limit } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
+
+  if (navigation.state === "loading" && !data) {
+    return <SkeletonTablePage title="Retention Center: Pet Profiles" />;
+  }
+
+  if (!data) return null;
+  const { profiles, totalCount, customerNames, sortKey, sortDirection, query, page, limit } = data;
   const [searchParams, setSearchParams] = useSearchParams();
   const [guideActive, setGuideActive] = useState(false);
   const submit = useSubmit();

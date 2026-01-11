@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useNavigate, useSubmit, redirect, useSearchParams } from "react-router";
+import { useLoaderData, useNavigate, useSubmit, redirect, useSearchParams, useNavigation } from "react-router";
 import { 
   Page, 
   Layout, 
@@ -26,6 +26,7 @@ import { WeightUtils } from "../modules/Core/WeightUtils";
 import { PageGuide } from "../components/PageGuide";
 import { GUIDE_CONTENT } from "../modules/Core/guide-content";
 import { z } from "zod";
+import { SkeletonTablePage } from "../components/SkeletonTablePage";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -92,7 +93,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function RulesIndex() {
-  const { rules, totalCount, settings, sortKey, sortDirection, query, page, limit } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
+
+  if (navigation.state === "loading" && !data) {
+    return <SkeletonTablePage title="Logic Engine: Product Rules" />;
+  }
+
+  if (!data) return null;
+  const { rules, totalCount, settings, sortKey, sortDirection, query, page, limit } = data;
   const [searchParams, setSearchParams] = useSearchParams();
   const [guideActive, setGuideActive] = useState(false);
   const submit = useSubmit();

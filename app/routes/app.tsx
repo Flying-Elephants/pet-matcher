@@ -1,8 +1,8 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { Outlet, useLoaderData } from "react-router";
+import { Outlet, useLoaderData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
-import { AppProvider as PolarisProvider } from "@shopify/polaris";
+import { AppProvider as PolarisProvider, ProgressBar } from "@shopify/polaris";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import enTranslations from "@shopify/polaris/locales/en.json";
 
@@ -19,6 +19,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function App() {
   const { apiKey } = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
+  const isNavigating = navigation.state !== "idle";
 
   return (
     <AppProvider embedded apiKey={apiKey}>
@@ -33,6 +35,11 @@ export default function App() {
           <a href="/app/settings">Settings</a>
           
         </ui-nav-menu>
+        {isNavigating && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 999 }}>
+            <ProgressBar size="small" />
+          </div>
+        )}
         <Outlet />
       </PolarisProvider>
     </AppProvider>

@@ -12,6 +12,7 @@ primary_region = 'ams'
 [env]
   NODE_ENV = 'production'
   PORT = '3000'
+  HOST = '0.0.0.0'
   SHOPIFY_APP_URL = 'https://pet-matcher-prod.fly.dev'
 
 [http_service]

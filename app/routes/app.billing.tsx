@@ -21,6 +21,7 @@ import { authenticate } from "../shopify.server";
 import { BillingService, type SubscriptionPlan } from "../modules/Billing";
 import { PageGuide } from "../components/PageGuide";
 import { GUIDE_CONTENT } from "../modules/Core/guide-content";
+import { SkeletonLoadingPage } from "../components/SkeletonLoadingPage";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -55,11 +56,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function BillingSettings() {
-  const { status } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
+
+  if (navigation.state === "loading" && !data) {
+    return <SkeletonLoadingPage />;
+  }
+
+  if (!data) return null;
+  const { status } = data;
   const [guideActive, setGuideActive] = useState(false);
   const submit = useSubmit();
-  const navigation = useNavigation();
 
   const handleUpgrade = (plan: string) => {
     submit({ plan }, { method: "POST" });

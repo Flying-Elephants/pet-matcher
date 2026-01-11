@@ -6,6 +6,7 @@ import { ProductRuleService, ProductRuleUpsertSchema } from "../modules/ProductR
 import { PetProfileService } from "../modules/PetProfiles";
 import { WeightUtils } from "../modules/Core/WeightUtils";
 import { useState, useMemo } from "react";
+import { SkeletonLoadingPage } from "../components/SkeletonLoadingPage";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
@@ -86,10 +87,17 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 };
 
 export default function RuleDetail() {
-  const { rule, settings, initialProductData } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
+
+  if (navigation.state === "loading" && !data) {
+    return <SkeletonLoadingPage primaryAction />;
+  }
+
+  if (!data) return null;
+  const { rule, settings, initialProductData } = data;
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
-  const navigation = useNavigation();
   const navigate = useNavigate();
 
   const [name, setName] = useState(rule?.name || "");

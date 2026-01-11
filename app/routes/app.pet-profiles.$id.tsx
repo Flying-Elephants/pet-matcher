@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { data, useLoaderData, useNavigate, useSubmit, useActionData } from "react-router";
+import { data, useLoaderData, useNavigate, useSubmit, useActionData, useNavigation } from "react-router";
 import {
   Page,
   Layout,
@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { authenticate } from "../shopify.server";
 import { PetProfileService } from "../modules/PetProfiles";
 import { z } from "zod";
+import { SkeletonLoadingPage } from "../components/SkeletonLoadingPage";
 
 const PetProfileUpdateSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -68,7 +69,15 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 };
 
 export default function EditPetProfile() {
-  const { profile, settings } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
+
+  if (navigation.state === "loading" && !data) {
+    return <SkeletonLoadingPage />;
+  }
+
+  if (!data) return null;
+  const { profile, settings } = data;
   const actionData = useActionData<{ success?: boolean; error?: string }>();
   const navigate = useNavigate();
   const submit = useSubmit();

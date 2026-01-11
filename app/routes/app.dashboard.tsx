@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
-import { data, useLoaderData, useFetcher, useRevalidator, useNavigate } from "react-router";
+import { data, useLoaderData, useFetcher, useRevalidator, useNavigate, useNavigation } from "react-router";
 import {
   Page,
   Layout,
@@ -34,6 +34,7 @@ import { AnalyticsService } from "../modules/Analytics";
 import { BillingService } from "../modules/Billing";
 import { ProductRuleService } from "../modules/ProductRules";
 import { useAppBridge } from "@shopify/app-bridge-react";
+import { SkeletonLoadingPage } from "../components/SkeletonLoadingPage";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -84,6 +85,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Dashboard() {
   const data = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
+
+  if (navigation.state === "loading" && !data) {
+    return <SkeletonLoadingPage primaryAction />;
+  }
+
   if (!data) return null;
   const { analytics, historicalMatches, billing, syncStatus, isGated } = data;
   const [guideActive, setGuideActive] = useState(false);

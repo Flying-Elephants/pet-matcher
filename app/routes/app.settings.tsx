@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { data, useLoaderData, useSubmit } from "react-router";
+import { data, useLoaderData, useSubmit, useNavigation } from "react-router";
 import {
   Page,
   Layout,
@@ -18,6 +18,7 @@ import { PageGuide } from "../components/PageGuide";
 import { GUIDE_CONTENT } from "../modules/Core/guide-content";
 import { PetProfileService, PetSettingsSchema } from "../modules/PetProfiles";
 import { useActionData } from "react-router";
+import { SkeletonLoadingPage } from "../components/SkeletonLoadingPage";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -43,7 +44,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Settings() {
-  const { settings } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
+
+  if (navigation.state === "loading" && !data) {
+    return <SkeletonLoadingPage />;
+  }
+
+  if (!data) return null;
+  const { settings } = data;
   const actionData = useActionData<typeof action>();
   const [formState, setFormState] = useState(settings);
   const [guideActive, setGuideActive] = useState(false);

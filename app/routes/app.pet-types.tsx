@@ -25,6 +25,8 @@ import { PetSettingsSchema, type PetSettings, type PetTypeConfig } from "../modu
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { PageGuide } from "../components/PageGuide";
 import { GUIDE_CONTENT } from "../modules/Core/guide-content";
+import { SkeletonTablePage } from "../components/SkeletonTablePage";
+import { useNavigation } from "react-router";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -56,7 +58,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function PetTypesPage() {
-  const { settings } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
+
+  if (navigation.state === "loading" && !data) {
+    return <SkeletonTablePage title="Breed Logic Configurator" />;
+  }
+
+  if (!data) return null;
+  const { settings } = data;
   const fetcher = useFetcher<{ status: string; message: string }>();
   const shopify = useAppBridge();
   
