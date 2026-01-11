@@ -12,7 +12,13 @@ export const PetProfileService = {
   },
 
   getProfilesByCustomer: async (shop: string, customerId: string): Promise<PetProfile[]> => {
-    return PetProfileDb.findByCustomer(shop, customerId);
+    const profiles = await PetProfileDb.findByCustomer(shop, customerId);
+    // Ensure at least one profile is active if any exist
+    if (profiles.length > 0 && !profiles.some(p => p.isSelected)) {
+      await PetProfileDb.setActiveProfile(shop, profiles[0].id);
+      profiles[0].isSelected = true;
+    }
+    return profiles;
   },
   
   createProfile: async (shop: string, data: CreatePetProfileInput): Promise<PetProfile> => {

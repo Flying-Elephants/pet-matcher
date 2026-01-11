@@ -1,4 +1,4 @@
-hdocument.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
   const container = document.querySelector('.pp-container');
   if (!container) return;
 
@@ -187,11 +187,12 @@ hdocument.addEventListener('DOMContentLoaded', function() {
     } else {
       updateSummaryView();
       showView('summary');
+      renderPetList(); // Pre-render pet list so it's ready when switching to management
     }
   }
 
   function updateSummaryView() {
-    const activePet = profiles.find(p => p.id === activePetId) || profiles[0];
+    const activePet = profiles.find(p => p.id === activePetId || p.isActive) || profiles[0];
     if (activePet) {
       elements.activePetName.textContent = activePet.name;
       elements.activePetDetails.textContent = `${activePet.breed} • ${activePet.type || 'Dog'}`;
@@ -229,8 +230,8 @@ hdocument.addEventListener('DOMContentLoaded', function() {
     elements.petList.innerHTML = '';
     profiles.forEach(pet => {
       const card = document.createElement('div');
-      card.className = `pp-pet-card ${pet.id === activePetId ? 'pp-active' : ''}`;
-      const isActive = pet.id === activePetId;
+      const isActive = pet.id === activePetId || pet.isActive;
+      card.className = `pp-pet-card ${isActive ? 'pp-active' : ''}`;
       card.innerHTML = `
         <div class="pp-card-content">
           <div class="pp-card-icon">🐾</div>
@@ -282,6 +283,7 @@ hdocument.addEventListener('DOMContentLoaded', function() {
   function showManagementView(autoFocusForm = false) {
     renderPetList();
     showView('management');
+    resetForm(); // Ensure form is in 'create' mode when opening management
     if (autoFocusForm) {
         const nameInput = document.getElementById('pet-name');
         if(nameInput) nameInput.focus();
@@ -333,12 +335,12 @@ hdocument.addEventListener('DOMContentLoaded', function() {
     }
     
     // Weight support
-    if (pet.weightGram) {
-        const weightInput = document.getElementById('pet-weight');
-        const unitSelect = document.getElementById('pet-weight-unit');
-        const unit = settings.weightUnit || 'kg';
-        unitSelect.value = unit;
-        
+    const weightInput = document.getElementById('pet-weight');
+    const unitSelect = document.getElementById('pet-weight-unit');
+    const unit = settings.weightUnit || 'kg';
+    if (unitSelect) unitSelect.value = unit;
+
+    if (pet.weightGram && weightInput) {
         let displayWeight;
         if (unit === 'kg') {
             displayWeight = pet.weightGram / 1000;
@@ -346,8 +348,8 @@ hdocument.addEventListener('DOMContentLoaded', function() {
             displayWeight = (pet.weightGram / 453.59).toFixed(1);
         }
         weightInput.value = displayWeight;
-    } else {
-        document.getElementById('pet-weight').value = '';
+    } else if (weightInput) {
+        weightInput.value = '';
     }
 
     elements.formTitle.textContent = 'Edit Pet';
@@ -419,8 +421,16 @@ hdocument.addEventListener('DOMContentLoaded', function() {
         });
         const result = await response.json();
         if (result.error) throw new Error(result.error);
+        
+        // Ensure only one pet is marked active in local state
         activePetId = id;
+        profiles = profiles.map(p => ({
+            ...p,
+            isActive: p.id === id
+        }));
+        
         renderPetList();
+        updateSummaryView();
         showToast('Active pet updated!');
     } catch (error) {
         showToast(error.message, 'error');

@@ -53,7 +53,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const activePet = profiles.find(p => p.isSelected);
 
       return jsonResponse({
-        profiles,
+        profiles: profiles.map(p => ({ ...p, isActive: p.isSelected })),
         matches,
         settings: settings || { types: [] },
         activePetId: activePet?.id || null
@@ -66,10 +66,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ]);
     const activePet = profiles.find(p => p.isSelected);
 
-    return jsonResponse({ 
-      profiles, 
-      settings: settings || { types: [] }, 
-      activePetId: activePet?.id || null 
+    return jsonResponse({
+      profiles: profiles.map(p => ({ ...p, isActive: p.isSelected })),
+      settings: settings || { types: [] },
+      activePetId: activePet?.id || null
     });
   } catch (error: any) {
     console.error("Proxy loader error:", error);

@@ -71,9 +71,10 @@
 
       let html = '';
       toRender.forEach(pet => {
-        const statusClass = pet.isMatched ? 'pp-match-item--matched' : 'pp-match-item--unmatched';
-        const icon = pet.isMatched ? '🐾' : '⚪';
-        const label = pet.isMatched ? 'Matched for' : 'Not a match for';
+        const isMatched = pet.isMatched === true;
+        const statusClass = isMatched ? 'pp-match-item--matched' : 'pp-match-item--unmatched';
+        const icon = isMatched ? '🐾' : '⚪';
+        const label = isMatched ? 'Matched for' : 'Not a match for';
         
         let warningHtml = '';
         if (pet.warnings.includes('MISSING_WEIGHT')) {
