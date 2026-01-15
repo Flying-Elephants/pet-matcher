@@ -85,6 +85,12 @@ export default function WelcomePage() {
           <p>Seamlessly embedded into your Shopify theme with real-time matching badges.</p>
         </div>
       </main>
+
+      <footer className={styles.footer}>
+        <a href="/privacy" className={styles.footerLink}>
+          Privacy Policy
+        </a>
+      </footer>
     </div>
   );
 }

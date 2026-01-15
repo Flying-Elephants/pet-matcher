@@ -27,6 +27,7 @@ import {
   ProductIcon,
 } from "@shopify/polaris-icons";
 import { useState, useMemo, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { authenticate } from "../shopify.server";
 import { PageGuide } from "../components/PageGuide";
 import { GUIDE_CONTENT } from "../modules/Core/guide-content";
@@ -35,6 +36,7 @@ import { BillingService } from "../modules/Billing";
 import { ProductRuleService } from "../modules/ProductRules";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { SkeletonLoadingPage } from "../components/SkeletonLoadingPage";
+import { FADE_IN_VARIANTS, STAGGER_CONTAINER_VARIANTS, STAGGER_ITEM_VARIANTS } from "../modules/Core/animations";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -161,38 +163,40 @@ export default function Dashboard() {
   if (isGated) {
     return (
       <Page title="Dashboard">
-        <Layout>
-          <Layout.Section>
-            <Banner
-              title="Upgrade your plan to unlock the Dashboard"
-              action={{ content: 'View Plans', onAction: () => navigate('/app/billing') }}
-              tone="warning"
-            >
-              <p>
-                The Dashboard and Analytics features are available on our <strong>Growth</strong> and <strong>Enterprise</strong> plans. 
-                Upgrade now to track matches, monitor performance, and access quick management tools.
-              </p>
-            </Banner>
-          </Layout.Section>
-          <Layout.Section>
-            <Box paddingBlockStart="400">
-               <Card background="bg-surface-secondary">
-                 <BlockStack gap="400" align="center">
-                    <Box padding="600">
-                      <BlockStack gap="400" align="center">
-                        <Icon source={CashDollarIcon} tone="subdued" />
-                        <Text as="h2" variant="headingLg" alignment="center">Premium Feature</Text>
-                        <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
-                          Get deep insights into your pet-matching performance and unlock advanced rule management by upgrading your subscription.
-                        </Text>
-                        <Button onClick={() => navigate("/app/billing")} variant="primary" size="large">Upgrade to Unlock</Button>
-                      </BlockStack>
-                    </Box>
-                 </BlockStack>
-               </Card>
-            </Box>
-          </Layout.Section>
-        </Layout>
+        <motion.div initial="hidden" animate="visible" variants={FADE_IN_VARIANTS}>
+          <Layout>
+            <Layout.Section>
+              <Banner
+                title="Upgrade your plan to unlock the Dashboard"
+                action={{ content: 'View Plans', onAction: () => navigate('/app/billing') }}
+                tone="warning"
+              >
+                <p>
+                  The Dashboard and Analytics features are available on our <strong>Growth</strong> and <strong>Enterprise</strong> plans. 
+                  Upgrade now to track matches, monitor performance, and access quick management tools.
+                </p>
+              </Banner>
+            </Layout.Section>
+            <Layout.Section>
+              <Box paddingBlockStart="400">
+                <Card background="bg-surface-secondary">
+                  <BlockStack gap="400" align="center">
+                      <Box padding="600">
+                        <BlockStack gap="400" align="center">
+                          <Icon source={CashDollarIcon} tone="subdued" />
+                          <Text as="h2" variant="headingLg" alignment="center">Premium Feature</Text>
+                          <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
+                            Get deep insights into your pet-matching performance and unlock advanced rule management by upgrading your subscription.
+                          </Text>
+                          <Button onClick={() => navigate("/app/billing")} variant="primary" size="large">Upgrade to Unlock</Button>
+                        </BlockStack>
+                      </Box>
+                  </BlockStack>
+                </Card>
+              </Box>
+            </Layout.Section>
+          </Layout>
+        </motion.div>
       </Page>
     );
   }
@@ -217,199 +221,229 @@ export default function Dashboard() {
         onClose={() => setGuideActive(false)} 
       />
       
-      <BlockStack gap="500">
-        {/* Sync Status Banner */}
-        {isSyncing && (
-          <Banner tone="info">
-            <BlockStack gap="200">
-              <Text as="p">Synchronizing your product catalog from Shopify...</Text>
-              <ProgressBar progress={syncProgress} size="small" />
-            </BlockStack>
-          </Banner>
-        )}
-
-        {isCompleted && !isSyncing && (
-          <Banner 
-            title="Product Sync Ready" 
-            tone="warning"
-            action={{
-              content: "Process Sync",
-              onAction: handleProcessSync,
-              loading: fetcher.state !== "idle" && fetcher.formData?.get("actionType") === "PROCESS_SYNC"
-            }}
-          >
-            <p>Your Shopify products have been pulled. Apply the changes to update your matching database.</p>
-          </Banner>
-        )}
-
-        {/* Action Bar */}
-        <Card padding="0">
-          <Box padding="300">
-            <InlineStack gap="300" align="start" blockAlign="center">
-              <Text as="span" variant="bodyMd" fontWeight="bold">Quick Actions:</Text>
-              <Button url="/app/rules/new" icon={PlusIcon} variant="secondary">New Rule</Button>
-              <Button url="/app/pet-profiles-admin" icon={ViewIcon} variant="secondary">Pet Profiles</Button>
-              <Button url="/app/pet-types" icon={SettingsIcon} variant="secondary">Pet Types</Button>
-              <Button onClick={handleStartSync} icon={RefreshIcon} variant="secondary" loading={fetcher.state !== "idle" && fetcher.formData?.get("actionType") === "START_SYNC"} disabled={isSyncing}>Re-sync Products</Button>
-            </InlineStack>
-          </Box>
-        </Card>
-
-        {/* Getting Started / Setup Guide */}
-        {showSetupGuide && (
-          <Card>
-            <BlockStack gap="400">
-              <Text as="h2" variant="headingMd">Getting Started: The Perfect Fit</Text>
-              <Grid columns={{ xs: 1, sm: 1, md: 3, lg: 3 }}>
-                <Box padding="300" background="bg-surface-secondary" borderRadius="200">
+      <motion.div 
+        initial="hidden" 
+        animate="visible" 
+        variants={STAGGER_CONTAINER_VARIANTS}
+      >
+        <BlockStack gap="500">
+          {/* Sync Status Banners */}
+          <AnimatePresence mode="wait">
+            {isSyncing && (
+              <motion.div 
+                key="syncing-banner"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+              >
+                <Banner tone="info">
                   <BlockStack gap="200">
-                    <InlineStack align="space-between">
-                       <Icon source={ProductIcon} tone="base" />
-                       {hasProducts ? <Badge tone="success">Synced</Badge> : <Badge tone="attention">Required</Badge>}
-                    </InlineStack>
-                    <Text as="h3" variant="headingSm">1. Fit & Forget Sync</Text>
-                    <Text as="p" variant="bodySm" tone="subdued">Auto-syncs with your catalog using Bulk Operations.</Text>
-                    {!hasProducts && <Button onClick={handleStartSync} size="slim" fullWidth>Start Sync</Button>}
+                    <Text as="p">Synchronizing your product catalog from Shopify...</Text>
+                    <ProgressBar progress={syncProgress} size="small" />
                   </BlockStack>
-                </Box>
-                <Box padding="300" background="bg-surface-secondary" borderRadius="200">
-                  <BlockStack gap="200">
-                    <InlineStack align="space-between">
-                       <Icon source={SettingsIcon} tone="base" />
-                       <Badge tone="info">Step 2</Badge>
-                    </InlineStack>
-                    <Text as="h3" variant="headingSm">2. Breed Logic</Text>
-                    <Text as="p" variant="bodySm" tone="subdued">Define attributes for smart recommendations.</Text>
-                    <Button onClick={() => navigate("/app/pet-types")} size="slim" fullWidth>Manage Types</Button>
-                  </BlockStack>
-                </Box>
-                <Box padding="300" background="bg-surface-secondary" borderRadius="200">
-                  <BlockStack gap="200">
-                    <InlineStack align="space-between">
-                       <Icon source={PlusIcon} tone="base" />
-                       {analytics.activeRules > 0 ? <Badge tone="success">Done</Badge> : <Badge tone="attention">Step 3</Badge>}
-                    </InlineStack>
-                    <Text as="h3" variant="headingSm">3. Retention Engine</Text>
-                    <Text as="p" variant="bodySm" tone="subdued">Capture birthdays and link products to breeds.</Text>
-                    <Button onClick={() => navigate("/app/rules/new")} size="slim" fullWidth variant="primary">Create Rule</Button>
-                  </BlockStack>
-                </Box>
-              </Grid>
-            </BlockStack>
-          </Card>
-        )}
+                </Banner>
+              </motion.div>
+            )}
 
-        {/* KPI Row */}
-        <Grid columns={{ xs: 1, sm: 2, md: 4, lg: 4 }}>
-          <KPICard title="Total Matches" value={analytics.totalMatches} trend="+12%" trendTone="success" />
-          <KPICard title="Active Rules" value={analytics.activeRules} />
-          <KPICard title="Pet Profiles" value={analytics.totalPetProfiles} trend="+5%" trendTone="success" />
-          <KPICard title="Synced Products" value={analytics.syncedProductsCount} />
-        </Grid>
-
-        <Layout>
-          {/* Historical Activity */}
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="400">
-                <Text as="h2" variant="headingMd">Match Activity (Last 30 Days)</Text>
-                <IndexTable
-                  resourceName={{ singular: "event", plural: "events" }}
-                  itemCount={historicalMatches.length}
-                  headings={[{ title: "Date" }, { title: "Match Count" }]}
-                  selectable={false}
+            {isCompleted && !isSyncing && (
+              <motion.div 
+                key="completed-banner"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+              >
+                <Banner 
+                  title="Product Sync Ready" 
+                  tone="warning"
+                  action={{
+                    content: "Process Sync",
+                    onAction: handleProcessSync,
+                    loading: fetcher.state !== "idle" && fetcher.formData?.get("actionType") === "PROCESS_SYNC"
+                  }}
                 >
-                  {historicalMatches.length === 0 ? (
-                    <IndexTable.Row id="empty" position={0}>
-                      <IndexTable.Cell colSpan={2}>
-                        <Box padding="400">
-                          <Text as="p" alignment="center" tone="subdued">No match activity recorded yet.</Text>
-                        </Box>
-                      </IndexTable.Cell>
-                    </IndexTable.Row>
-                  ) : (
-                    historicalMatches.map((event, index) => (
-                      <IndexTable.Row id={event.date} key={event.date} position={index}>
-                        <IndexTable.Cell>
-                          <Text variant="bodyMd" fontWeight="bold" as="span">{event.date}</Text>
-                        </IndexTable.Cell>
-                        <IndexTable.Cell>{event.matchCount}</IndexTable.Cell>
-                      </IndexTable.Row>
-                    ))
-                  )}
-                </IndexTable>
-              </BlockStack>
+                  <p>Your Shopify products have been pulled. Apply the changes to update your matching database.</p>
+                </Banner>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Action Bar */}
+          <motion.div variants={STAGGER_ITEM_VARIANTS}>
+            <Card padding="0">
+              <Box padding="300">
+                <InlineStack gap="300" align="start" blockAlign="center">
+                  <Text as="span" variant="bodyMd" fontWeight="bold">Quick Actions:</Text>
+                  <Button url="/app/rules/new" icon={PlusIcon} variant="secondary">New Rule</Button>
+                  <Button url="/app/pet-profiles-admin" icon={ViewIcon} variant="secondary">Pet Profiles</Button>
+                  <Button url="/app/pet-types" icon={SettingsIcon} variant="secondary">Pet Types</Button>
+                  <Button onClick={handleStartSync} icon={RefreshIcon} variant="secondary" loading={fetcher.state !== "idle" && fetcher.formData?.get("actionType") === "START_SYNC"} disabled={isSyncing}>Re-sync Products</Button>
+                </InlineStack>
+              </Box>
             </Card>
-          </Layout.Section>
+          </motion.div>
 
-          {/* Side Panels */}
-          <Layout.Section variant="oneThird">
-            <BlockStack gap="500">
+          {/* Getting Started / Setup Guide */}
+          {showSetupGuide && (
+            <motion.div variants={STAGGER_ITEM_VARIANTS}>
               <Card>
-                <BlockStack gap="300">
-                  <Text as="h2" variant="headingMd">Plan Usage</Text>
-                  <Divider />
-                  <BlockStack gap="200">
-                    <InlineStack align="space-between">
-                      <Badge tone={billing.plan === "FREE" ? "info" : "success"}>{billing.plan}</Badge>
-                      <Text as="p" variant="bodySm" tone="subdued">
-                        {billing.limits.maxMatches === 0 ? billing.usage : `${billing.usage} / ${billing.limits.maxMatches}`}
-                      </Text>
-                    </InlineStack>
-                    {billing.limits.maxMatches > 0 && (
-                      <ProgressBar
-                        progress={Math.min((billing.usage / billing.limits.maxMatches) * 100, 100)}
-                        tone={billing.usage >= billing.limits.maxMatches ? "critical" : "primary"}
-                      />
-                    )}
-                    <Button url="/app/billing" variant="tertiary" size="slim" icon={CashDollarIcon}>Manage Subscription</Button>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-
-              <Card>
-                <BlockStack gap="300">
-                  <Text as="h2" variant="headingMd">Top Performing Rules</Text>
-                  <Divider />
-                  {analytics.topPerformingRules.length === 0 ? (
-                    <Text as="p" tone="subdued">No rules triggered yet.</Text>
-                  ) : (
-                    <BlockStack gap="200">
-                      {analytics.topPerformingRules.map((rule, i) => (
-                        <InlineStack key={i} align="space-between">
-                          <Text as="span" variant="bodyMd">{rule.ruleName}</Text>
-                          <Badge tone="info">{String(rule.count)}</Badge>
+                <BlockStack gap="400">
+                  <Text as="h2" variant="headingMd">Getting Started: The Perfect Fit</Text>
+                  <Grid columns={{ xs: 1, sm: 1, md: 3, lg: 3 }}>
+                    <Box padding="300" background="bg-surface-secondary" borderRadius="200">
+                      <BlockStack gap="200">
+                        <InlineStack align="space-between">
+                          <Icon source={ProductIcon} tone="base" />
+                          {hasProducts ? <Badge tone="success">Synced</Badge> : <Badge tone="attention">Required</Badge>}
                         </InlineStack>
-                      ))}
-                    </BlockStack>
-                  )}
-                </BlockStack>
-              </Card>
-
-              <Card>
-                <BlockStack gap="300">
-                  <Text as="h2" variant="headingMd">Popular Breeds</Text>
-                  <Divider />
-                  <Grid columns={{ xs: 2 }}>
-                    {analytics.popularBreeds.length === 0 ? (
-                      <Text as="p" tone="subdued">No data.</Text>
-                    ) : (
-                      analytics.popularBreeds.slice(0, 4).map((item, i) => (
-                        <Box key={i} padding="200" background="bg-surface-secondary" borderRadius="100">
-                          <BlockStack gap="0" align="center">
-                            <Text as="p" variant="headingSm">{item.count}</Text>
-                            <Text as="p" variant="bodyXs" tone="subdued" truncate>{item.breed}</Text>
-                          </BlockStack>
-                        </Box>
-                      ))
-                    )}
+                        <Text as="h3" variant="headingSm">1. Fit & Forget Sync</Text>
+                        <Text as="p" variant="bodySm" tone="subdued">Auto-syncs with your catalog using Bulk Operations.</Text>
+                        {!hasProducts && <Button onClick={handleStartSync} size="slim" fullWidth>Start Sync</Button>}
+                      </BlockStack>
+                    </Box>
+                    <Box padding="300" background="bg-surface-secondary" borderRadius="200">
+                      <BlockStack gap="200">
+                        <InlineStack align="space-between">
+                          <Icon source={SettingsIcon} tone="base" />
+                          <Badge tone="info">Step 2</Badge>
+                        </InlineStack>
+                        <Text as="h3" variant="headingSm">2. Breed Logic</Text>
+                        <Text as="p" variant="bodySm" tone="subdued">Define attributes for smart recommendations.</Text>
+                        <Button onClick={() => navigate("/app/pet-types")} size="slim" fullWidth>Manage Types</Button>
+                      </BlockStack>
+                    </Box>
+                    <Box padding="300" background="bg-surface-secondary" borderRadius="200">
+                      <BlockStack gap="200">
+                        <InlineStack align="space-between">
+                          <Icon source={PlusIcon} tone="base" />
+                          {analytics.activeRules > 0 ? <Badge tone="success">Done</Badge> : <Badge tone="attention">Step 3</Badge>}
+                        </InlineStack>
+                        <Text as="h3" variant="headingSm">3. Retention Engine</Text>
+                        <Text as="p" variant="bodySm" tone="subdued">Capture birthdays and link products to breeds.</Text>
+                        <Button onClick={() => navigate("/app/rules/new")} size="slim" fullWidth variant="primary">Create Rule</Button>
+                      </BlockStack>
+                    </Box>
                   </Grid>
                 </BlockStack>
               </Card>
-            </BlockStack>
-          </Layout.Section>
-        </Layout>
-      </BlockStack>
+            </motion.div>
+          )}
+
+          {/* KPI Row */}
+          <motion.div variants={STAGGER_ITEM_VARIANTS}>
+            <Grid columns={{ xs: 1, sm: 2, md: 4, lg: 4 }}>
+              <KPICard title="Total Matches" value={analytics.totalMatches} trend="+12%" trendTone="success" />
+              <KPICard title="Active Rules" value={analytics.activeRules} />
+              <KPICard title="Pet Profiles" value={analytics.totalPetProfiles} trend="+5%" trendTone="success" />
+              <KPICard title="Synced Products" value={analytics.syncedProductsCount} />
+            </Grid>
+          </motion.div>
+
+          <motion.div variants={STAGGER_ITEM_VARIANTS}>
+            <Layout>
+              {/* Historical Activity */}
+              <Layout.Section>
+                <Card>
+                  <BlockStack gap="400">
+                    <Text as="h2" variant="headingMd">Match Activity (Last 30 Days)</Text>
+                    <IndexTable
+                      resourceName={{ singular: "event", plural: "events" }}
+                      itemCount={historicalMatches.length}
+                      headings={[{ title: "Date" }, { title: "Match Count" }]}
+                      selectable={false}
+                    >
+                      {historicalMatches.length === 0 ? (
+                        <IndexTable.Row id="empty" position={0}>
+                          <IndexTable.Cell colSpan={2}>
+                            <Box padding="400">
+                              <Text as="p" alignment="center" tone="subdued">No match activity recorded yet.</Text>
+                            </Box>
+                          </IndexTable.Cell>
+                        </IndexTable.Row>
+                      ) : (
+                        historicalMatches.map((event, index) => (
+                          <IndexTable.Row id={event.date} key={event.date} position={index}>
+                            <IndexTable.Cell>
+                              <Text variant="bodyMd" fontWeight="bold" as="span">{event.date}</Text>
+                            </IndexTable.Cell>
+                            <IndexTable.Cell>{event.matchCount}</IndexTable.Cell>
+                          </IndexTable.Row>
+                        ))
+                      )}
+                    </IndexTable>
+                  </BlockStack>
+                </Card>
+              </Layout.Section>
+
+              {/* Side Panels */}
+              <Layout.Section variant="oneThird">
+                <BlockStack gap="500">
+                  <Card>
+                    <BlockStack gap="300">
+                      <Text as="h2" variant="headingMd">Plan Usage</Text>
+                      <Divider />
+                      <BlockStack gap="200">
+                        <InlineStack align="space-between">
+                          <Badge tone={billing.plan === "FREE" ? "info" : "success"}>{billing.plan}</Badge>
+                          <Text as="p" variant="bodySm" tone="subdued">
+                            {billing.limits.maxMatches === 0 ? billing.usage : `${billing.usage} / ${billing.limits.maxMatches}`}
+                          </Text>
+                        </InlineStack>
+                        {billing.limits.maxMatches > 0 && (
+                          <ProgressBar
+                            progress={Math.min((billing.usage / billing.limits.maxMatches) * 100, 100)}
+                            tone={billing.usage >= billing.limits.maxMatches ? "critical" : "primary"}
+                          />
+                        )}
+                        <Button url="/app/billing" variant="tertiary" size="slim" icon={CashDollarIcon}>Manage Subscription</Button>
+                      </BlockStack>
+                    </BlockStack>
+                  </Card>
+
+                  <Card>
+                    <BlockStack gap="300">
+                      <Text as="h2" variant="headingMd">Top Performing Rules</Text>
+                      <Divider />
+                      {analytics.topPerformingRules.length === 0 ? (
+                        <Text as="p" tone="subdued">No rules triggered yet.</Text>
+                      ) : (
+                        <BlockStack gap="200">
+                          {analytics.topPerformingRules.map((rule, i) => (
+                            <InlineStack key={i} align="space-between">
+                              <Text as="span" variant="bodyMd">{rule.ruleName}</Text>
+                              <Badge tone="info">{String(rule.count)}</Badge>
+                            </InlineStack>
+                          ))}
+                        </BlockStack>
+                      )}
+                    </BlockStack>
+                  </Card>
+
+                  <Card>
+                    <BlockStack gap="300">
+                      <Text as="h2" variant="headingMd">Popular Breeds</Text>
+                      <Divider />
+                      <Grid columns={{ xs: 2 }}>
+                        {analytics.popularBreeds.length === 0 ? (
+                          <Text as="p" tone="subdued">No data.</Text>
+                        ) : (
+                          analytics.popularBreeds.slice(0, 4).map((item, i) => (
+                            <Box key={i} padding="200" background="bg-surface-secondary" borderRadius="100">
+                              <BlockStack gap="0" align="center">
+                                <Text as="p" variant="headingSm">{item.count}</Text>
+                                <Text as="p" variant="bodyXs" tone="subdued" truncate>{item.breed}</Text>
+                              </BlockStack>
+                            </Box>
+                          ))
+                        )}
+                      </Grid>
+                    </BlockStack>
+                  </Card>
+                </BlockStack>
+              </Layout.Section>
+            </Layout>
+          </motion.div>
+        </BlockStack>
+      </motion.div>
     </Page>
   );
 }

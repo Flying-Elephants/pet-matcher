@@ -19,9 +19,11 @@ const jsonResponse = (data: any, status = 200) => {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
+    console.log("App Proxy request received");
     const { session } = await authenticate.public.appProxy(request);
     
     if (!session) {
+      console.error("App Proxy: Unauthorized (no session)");
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
@@ -46,33 +48,41 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
 
     if (productId) {
-      const [{ profiles, matches }, settings] = await Promise.all([
+      const [matchData, settings] = await Promise.all([
         PetProfileService.getMatchesForProduct(session.shop, customerId, productId),
         PetProfileService.getSettings(session.shop)
       ]);
-      const activePet = profiles.find(p => p.isSelected);
+      const { profiles, matches, isAgreed } = matchData as any;
+      const activePet = profiles.find((p: any) => p.isSelected);
 
       return jsonResponse({
-        profiles: profiles.map(p => ({ ...p, isActive: p.isSelected })),
+        profiles: profiles.map((p: any) => ({ ...p, isActive: p.isSelected })),
         matches,
         settings: settings || { types: [] },
-        activePetId: activePet?.id || null
+        activePetId: activePet?.id || null,
+        isAgreed: isAgreed ?? false
       });
     }
 
-    const [profiles, settings] = await Promise.all([
+    const [profiles, settings, isAgreed] = await Promise.all([
       PetProfileService.getProfilesByCustomer(session.shop, customerId),
-      PetProfileService.getSettings(session.shop)
+      PetProfileService.getSettings(session.shop),
+      PetProfileService.getConsent(session.shop, customerId)
     ]);
     const activePet = profiles.find(p => p.isSelected);
 
     return jsonResponse({
       profiles: profiles.map(p => ({ ...p, isActive: p.isSelected })),
       settings: settings || { types: [] },
-      activePetId: activePet?.id || null
+      activePetId: activePet?.id || null,
+      isAgreed
     });
   } catch (error: any) {
-    console.error("Proxy loader error:", error);
+    console.error("Proxy loader error details:", {
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause
+    });
     return jsonResponse({ error: "Internal Server Error", details: error.message }, 500);
   }
 };
@@ -143,6 +153,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         await PetProfileService.setActiveProfile(session.shop, customerId, petId);
         
         return jsonResponse({ activePetId: petId });
+      }
+
+      case "set_consent": {
+        const isAgreed = formData.get("isAgreed") === "true";
+        await PetProfileService.setConsent(session.shop, customerId, isAgreed);
+        return jsonResponse({ success: true, isAgreed });
       }
 
       default:

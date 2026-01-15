@@ -103,11 +103,11 @@ export const ProductRuleService = {
   },
 
   deleteRule: async (shop: string, id: string): Promise<void> => {
-    return ProductRuleDb.delete(shop, id);
+    await ProductRuleDb.delete(shop, id);
   },
 
   deleteManyRules: async (shop: string, ids: string[]): Promise<void> => {
-    return ProductRuleDb.deleteMany(shop, ids);
+    await ProductRuleDb.deleteMany(shop, ids);
   },
 
   /**
@@ -156,6 +156,10 @@ export const ProductRuleService = {
 
   getSyncStatus: async (admin: AdminApiContext) => {
     return BulkOperationService.getStatus(admin);
+  },
+
+  purgeOldJobs: async (days: number = 7): Promise<number> => {
+    return ProductRuleDb.purgeOldJobs(days);
   }
 };
 

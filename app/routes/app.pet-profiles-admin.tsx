@@ -17,16 +17,35 @@ import {
   BlockStack,
 } from "@shopify/polaris";
 import { useState, useCallback } from "react";
+import { motion } from "framer-motion";
 import { authenticate } from "../shopify.server";
 import { PetProfileService } from "../modules/PetProfiles";
+import { ComplianceService } from "../modules/Core";
 import { z } from "zod";
 import { PageGuide } from "../components/PageGuide";
 import { GUIDE_CONTENT } from "../modules/Core/guide-content";
 import { InfoIcon } from "@shopify/polaris-icons";
 import { SkeletonTablePage } from "../components/SkeletonTablePage";
+import { FADE_IN_VARIANTS } from "../modules/Core/animations";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
+
+  // Security & Compliance Gating
+  const settings = await ComplianceService.getSettings(session.shop);
+  const s = session as any;
+  if (s.collaborator && settings.limitCollaboratorAccess) {
+    throw new Response("Forbidden: Collaborator access restricted", { status: 403 });
+  }
+
+  // Audit Logging
+  await ComplianceService.logAccess({
+    shop: session.shop,
+    userId: s.userId || undefined,
+    userName: `${s.firstName || ""} ${s.lastName || ""}`.trim() || "Unknown",
+    action: "VIEW_PET_PROFILES_LIST",
+  });
+
   const url = new URL(request.url);
   const sortKey = url.searchParams.get("sortKey") || "createdAt";
   const sortDirection = url.searchParams.get("sortDirection") || "desc";
@@ -91,6 +110,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
+
+  // Security & Compliance Gating
+  const settings = await ComplianceService.getSettings(session.shop);
+  const s = session as any;
+  if (s.collaborator && settings.limitCollaboratorAccess) {
+    throw new Response("Forbidden: Collaborator access restricted", { status: 403 });
+  }
+
   const formData = await request.formData();
   const id = formData.get("id") as string;
   const _action = formData.get("_action");
@@ -280,60 +307,62 @@ export default function PetProfilesAdmin() {
       />
       <Layout>
         <Layout.Section>
-          <Card padding="0">
-            <BlockStack>
-              <IndexFilters
-                queryValue={queryValue}
-                queryPlaceholder="Search profiles"
-                onQueryChange={onHandleSearchChange}
-                onQueryClear={onHandleSearchClear}
-                cancelAction={{
-                  onAction: onHandleSearchClear,
-                  disabled: false,
-                  loading: false,
-                }}
-                tabs={[]}
-                selected={0}
-                onSelect={() => {}}
-                canCreateNewView={false}
-                filters={[]}
-                onClearAll={() => {}}
-                mode={mode}
-                setMode={setMode}
-              />
-              <IndexTable
-                resourceName={resourceName}
-                itemCount={profiles.length}
-                selectedItemsCount={
-                  allResourcesSelected ? 'All' : selectedResources.length
-                }
-                onSelectionChange={handleSelectionChange}
-                promotedBulkActions={promotedBulkActions}
-                headings={[
-                  { title: "Name" },
-                  { title: "Type" },
-                  { title: "Breed" },
-                  { title: "Customer" },
-                  { title: "Created" },
-                  { title: "Actions", alignment: "end" },
-                ]}
-                sortColumnIndex={['name', 'type', 'breed', 'shopifyId', 'createdAt'].indexOf(sortKey)}
-                sortDirection={sortDirection === 'asc' ? 'ascending' : 'descending'}
-                onSort={handleSort}
-                sortable={[true, true, true, true, true, false]}
-              >
-                {rowMarkup}
-              </IndexTable>
-              <div style={{ padding: '16px', display: 'flex', justifyContent: 'center', borderTop: '1px solid var(--p-border-subdued)' }}>
-                <Pagination
-                  hasPrevious={hasPrevious}
-                  onPrevious={() => handlePagination(page - 1)}
-                  hasNext={hasNext}
-                  onNext={() => handlePagination(page + 1)}
+          <motion.div initial="hidden" animate="visible" variants={FADE_IN_VARIANTS}>
+            <Card padding="0">
+              <BlockStack>
+                <IndexFilters
+                  queryValue={queryValue}
+                  queryPlaceholder="Search profiles"
+                  onQueryChange={onHandleSearchChange}
+                  onQueryClear={onHandleSearchClear}
+                  cancelAction={{
+                    onAction: onHandleSearchClear,
+                    disabled: false,
+                    loading: false,
+                  }}
+                  tabs={[]}
+                  selected={0}
+                  onSelect={() => {}}
+                  canCreateNewView={false}
+                  filters={[]}
+                  onClearAll={() => {}}
+                  mode={mode}
+                  setMode={setMode}
                 />
-              </div>
-            </BlockStack>
-          </Card>
+                <IndexTable
+                  resourceName={resourceName}
+                  itemCount={profiles.length}
+                  selectedItemsCount={
+                    allResourcesSelected ? 'All' : selectedResources.length
+                  }
+                  onSelectionChange={handleSelectionChange}
+                  promotedBulkActions={promotedBulkActions}
+                  headings={[
+                    { title: "Name" },
+                    { title: "Type" },
+                    { title: "Breed" },
+                    { title: "Customer" },
+                    { title: "Created" },
+                    { title: "Actions", alignment: "end" },
+                  ]}
+                  sortColumnIndex={['name', 'type', 'breed', 'shopifyId', 'createdAt'].indexOf(sortKey)}
+                  sortDirection={sortDirection === 'asc' ? 'ascending' : 'descending'}
+                  onSort={handleSort}
+                  sortable={[true, true, true, true, true, false]}
+                >
+                  {rowMarkup}
+                </IndexTable>
+                <div style={{ padding: '16px', display: 'flex', justifyContent: 'center', borderTop: '1px solid var(--p-border-subdued)' }}>
+                  <Pagination
+                    hasPrevious={hasPrevious}
+                    onPrevious={() => handlePagination(page - 1)}
+                    hasNext={hasNext}
+                    onNext={() => handlePagination(page + 1)}
+                  />
+                </div>
+              </BlockStack>
+            </Card>
+          </motion.div>
         </Layout.Section>
       </Layout>
 

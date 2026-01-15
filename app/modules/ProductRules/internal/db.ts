@@ -58,8 +58,8 @@ export const ProductRuleDb = {
         name: rest.name,
         priority: rest.priority,
         isActive: rest.isActive,
-        conditions: rest.conditions ? JSON.stringify(rest.conditions) : undefined,
-        productIds: rest.productIds ? JSON.stringify(rest.productIds) : undefined,
+        conditions: rest.conditions as any, // Native Json
+        productIds: rest.productIds as any, // Native Json
       },
       create: {
         id: id || undefined,
@@ -67,8 +67,8 @@ export const ProductRuleDb = {
         name: rest.name || "New Rule",
         priority: rest.priority || 0,
         isActive: rest.isActive ?? true,
-        conditions: JSON.stringify(rest.conditions || { petTypes: [], breeds: [] }),
-        productIds: JSON.stringify(rest.productIds || []),
+        conditions: (rest.conditions || { petTypes: [], breeds: [] }) as any,
+        productIds: (rest.productIds || []) as any,
       },
     });
     return this.mapToDomain(rule);
@@ -92,8 +92,21 @@ export const ProductRuleDb = {
   mapToDomain(raw: any): ProductRule {
     return {
       ...raw,
-      conditions: JSON.parse(raw.conditions) as RuleConditions,
-      productIds: JSON.parse(raw.productIds) as string[],
+      conditions: raw.conditions as unknown as RuleConditions,
+      productIds: raw.productIds as unknown as string[],
     };
   },
+
+  async purgeOldJobs(days: number): Promise<number> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+
+    const { count } = await db.job.deleteMany({
+      where: {
+        createdAt: { lt: cutoffDate }
+      }
+    });
+
+    return count;
+  }
 };

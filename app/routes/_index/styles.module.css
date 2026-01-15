@@ -153,3 +153,24 @@
     padding: 2rem 1rem;
   }
 }
+
+.footer {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e1e3e5;
+  width: 100%;
+  max-width: 64rem;
+  text-align: center;
+}
+
+.footerLink {
+  color: #6d7175;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footerLink:hover {
+  color: #008060;
+  text-decoration: underline;
+}

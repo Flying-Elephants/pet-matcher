@@ -14,6 +14,7 @@ import {
 import { useState, useEffect } from "react";
 import { authenticate } from "../shopify.server";
 import { PetProfileService } from "../modules/PetProfiles";
+import { ComplianceService } from "../modules/Core";
 import { z } from "zod";
 import { SkeletonLoadingPage } from "../components/SkeletonLoadingPage";
 
@@ -26,6 +27,22 @@ const PetProfileUpdateSchema = z.object({
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const id = params.id;
+
+  // Security & Compliance Gating
+  const complianceSettings = await ComplianceService.getSettings(session.shop);
+  const s = session as any;
+  if (s.collaborator && complianceSettings.limitCollaboratorAccess) {
+    throw new Response("Forbidden: Collaborator access restricted", { status: 403 });
+  }
+
+  // Audit Logging
+  await ComplianceService.logAccess({
+    shop: session.shop,
+    userId: s.userId || undefined,
+    userName: `${s.firstName || ""} ${s.lastName || ""}`.trim() || "Unknown",
+    action: "VIEW_PET_PROFILE_DETAIL",
+    resourceId: id,
+  });
 
   if (!id) {
     throw new Response("Not Found", { status: 404 });
@@ -46,6 +63,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const id = params.id;
+
+  // Security & Compliance Gating
+  const complianceSettings = await ComplianceService.getSettings(session.shop);
+  const s = session as any;
+  if (s.collaborator && complianceSettings.limitCollaboratorAccess) {
+    throw new Response("Forbidden: Collaborator access restricted", { status: 403 });
+  }
 
   if (!id) {
     return data({ error: "Missing ID" }, { status: 400 });

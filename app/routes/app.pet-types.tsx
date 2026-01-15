@@ -27,6 +27,8 @@ import { PageGuide } from "../components/PageGuide";
 import { GUIDE_CONTENT } from "../modules/Core/guide-content";
 import { SkeletonTablePage } from "../components/SkeletonTablePage";
 import { useNavigation } from "react-router";
+import { motion } from "framer-motion";
+import { STAGGER_CONTAINER_VARIANTS, STAGGER_ITEM_VARIANTS } from "../modules/Core/animations";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -194,54 +196,58 @@ export default function PetTypesPage() {
         active={guideActive} 
         onClose={() => setGuideActive(false)} 
       />
-      <Layout>
-        <Layout.Section>
-          <Card padding="0">
-            {types.length === 0 ? (
-              <EmptyState
-                heading="No Breed Logic Configured"
-                action={{ content: "New Breed Logic", onAction: () => openModal(null) }}
-                image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-              >
-                <p>Configure smart breed logic (e.g. Dog, Cat) to power the Perfect Fit engine.</p>
-              </EmptyState>
-            ) : (
-              <ResourceList
-                resourceName={{ singular: "pet type", plural: "pet types" }}
-                items={types}
-                renderItem={(item) => {
-                  const { id, label, breeds } = item;
-                  const media = <Avatar customer size="md" name={label} />;
+      <motion.div initial="hidden" animate="visible" variants={STAGGER_CONTAINER_VARIANTS}>
+        <Layout>
+          <Layout.Section>
+            <motion.div variants={STAGGER_ITEM_VARIANTS}>
+              <Card padding="0">
+                {types.length === 0 ? (
+                  <EmptyState
+                    heading="No Breed Logic Configured"
+                    action={{ content: "New Breed Logic", onAction: () => openModal(null) }}
+                    image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+                  >
+                    <p>Configure smart breed logic (e.g. Dog, Cat) to power the Perfect Fit engine.</p>
+                  </EmptyState>
+                ) : (
+                  <ResourceList
+                    resourceName={{ singular: "pet type", plural: "pet types" }}
+                    items={types}
+                    renderItem={(item) => {
+                      const { id, label, breeds } = item;
+                      const media = <Avatar customer size="md" name={label} />;
 
-                  return (
-                    <ResourceItem
-                      id={id}
-                      url="#"
-                      onClick={() => openModal(item)}
-                      media={media}
-                      accessibilityLabel={`View details for ${label}`}
-                      shortcutActions={[
-                        {
-                          content: "Delete",
-                          accessibilityLabel: `Delete ${label}`,
-                          onAction: () => handleDeleteType(id),
-                        }
-                      ]}
-                    >
-                      <Text variant="bodyMd" fontWeight="bold" as="h3">
-                        {label}
-                      </Text>
-                      <Text variant="bodySm" as="p" tone="subdued">
-                        {breeds.length} breeds configured
-                      </Text>
-                    </ResourceItem>
-                  );
-                }}
-              />
-            )}
-          </Card>
-        </Layout.Section>
-      </Layout>
+                      return (
+                        <ResourceItem
+                          id={id}
+                          url="#"
+                          onClick={() => openModal(item)}
+                          media={media}
+                          accessibilityLabel={`View details for ${label}`}
+                          shortcutActions={[
+                            {
+                              content: "Delete",
+                              accessibilityLabel: `Delete ${label}`,
+                              onAction: () => handleDeleteType(id),
+                            }
+                          ]}
+                        >
+                          <Text variant="bodyMd" fontWeight="bold" as="h3">
+                            {label}
+                          </Text>
+                          <Text variant="bodySm" as="p" tone="subdued">
+                            {breeds.length} breeds configured
+                          </Text>
+                        </ResourceItem>
+                      );
+                    }}
+                  />
+                )}
+              </Card>
+            </motion.div>
+          </Layout.Section>
+        </Layout>
+      </motion.div>
 
       <Modal
         open={activeModal}

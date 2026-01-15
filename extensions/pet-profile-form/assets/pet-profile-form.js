@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const views = {
     skeleton: document.getElementById('pp-skeleton-loader'),
+    consent: document.getElementById('pp-consent-view'),
     welcome: document.getElementById('pp-welcome-view'),
     summary: document.getElementById('pp-summary-view'),
     management: document.getElementById('pp-management-view')
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
     activePetDetails: document.getElementById('pp-active-pet-details'),
     startBtn: document.getElementById('pp-start-btn'),
     manageBtn: document.getElementById('pp-manage-btn'),
+    agreeBtn: document.getElementById('pp-agree-btn'),
     closeManageBtn: document.getElementById('pp-close-management-btn'),
     petList: document.getElementById('pet-profile-list'),
     form: document.getElementById('pet-profile-form'),
@@ -133,6 +135,10 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
 
+  if (elements.agreeBtn) {
+    elements.agreeBtn.addEventListener('click', handleAgreeConsent);
+  }
+
   if (elements.manageBtn) elements.manageBtn.addEventListener('click', () => showManagementView());
   if (elements.closeManageBtn) elements.closeManageBtn.addEventListener('click', closeManagementView);
   if (elements.formCancelBtn) elements.formCancelBtn.addEventListener('click', resetForm);
@@ -161,6 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
       profiles = data.profiles || [];
       activePetId = data.activePetId;
       settings = data.settings || { types: [] };
+      const isAgreed = data.isAgreed;
 
       populateTypeOptions();
       
@@ -170,10 +177,50 @@ document.addEventListener('DOMContentLoaded', function() {
         return; // Don't render anything else
       }
 
+      // If not agreed, show trigger but force consent view in modal
+      if (!isAgreed) {
+        if (modal.trigger) modal.trigger.style.display = 'flex';
+        showView('consent');
+        return;
+      }
+
+      // If agreed, show trigger and render normally
+      if (modal.trigger) modal.trigger.style.display = 'flex';
       render();
     } catch (error) {
       console.error('Error fetching pet profiles:', error);
       showToast('Failed to load profiles. Please try again.', 'error');
+      // Emergency Fallback: Ensure trigger is visible even on error so user isn't stranded
+      if (modal.trigger) modal.trigger.style.display = 'flex';
+    }
+  }
+
+  // --- API Interactions ---
+
+  async function handleAgreeConsent() {
+    if (elements.agreeBtn) {
+      elements.agreeBtn.disabled = true;
+      elements.agreeBtn.textContent = 'Processing...';
+    }
+    try {
+      const formData = new FormData();
+      formData.append('intent', 'set_consent');
+      formData.append('isAgreed', 'true');
+      const response = await fetch(`/apps/pet-matcher-final/pet-profiles?logged_in_customer_id=${customerId}`, {
+          method: 'POST',
+          body: formData
+      });
+      const result = await response.json();
+      if (result.error) throw new Error(result.error);
+      
+      showToast('Agreement saved!');
+      await fetchProfiles();
+    } catch (error) {
+      showToast(error.message, 'error');
+      if (elements.agreeBtn) {
+        elements.agreeBtn.disabled = false;
+        elements.agreeBtn.textContent = 'I Agree to Data Usage';
+      }
     }
   }
 

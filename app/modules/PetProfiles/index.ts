@@ -47,6 +47,11 @@ export const PetProfileService = {
   },
 
   getMatchesForProduct: async (shop: string, customerId: string, productId: string) => {
+    const isAgreed = await PetProfileDb.getConsent(shop, customerId);
+    if (!isAgreed) {
+      return { profiles: [], matches: [], isAgreed: false };
+    }
+
     const [profiles, { rules }] = await Promise.all([
       PetProfileDb.findByCustomer(shop, customerId),
       ProductRuleService.getRules(shop)
@@ -56,7 +61,15 @@ export const PetProfileService = {
       profiles.map(async (pet) => MatcherService.isProductMatched(pet, rules, productId))
     );
 
-    return { profiles, matches };
+    return { profiles, matches, isAgreed: true };
+  },
+
+  getConsent: async (shop: string, customerId: string): Promise<boolean> => {
+    return PetProfileDb.getConsent(shop, customerId);
+  },
+
+  setConsent: async (shop: string, customerId: string, isAgreed: boolean): Promise<void> => {
+    return PetProfileDb.setConsent(shop, customerId, isAgreed);
   },
 
   deleteCustomerData: async (shop: string, customerId: string): Promise<void> => {
@@ -95,5 +108,9 @@ export const PetProfileService = {
       skip,
       take
     });
+  },
+
+  purgeInactiveProfiles: async (years: number = 2): Promise<number> => {
+    return PetProfileDb.purgeInactive(years);
   }
 };

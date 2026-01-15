@@ -1,12 +1,14 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "13df7349b52e680367f9843ce7f2be32"
-name = "pet-matcher-final"
+name = "Pet Matcher: Product Match"
 application_url = "https://pet-matcher-prod.fly.dev"
 embedded = true
 
 [build]
 automatically_update_urls_on_dev = true
+
+compliance_urls = { privacy_policy_url = "https://pet-matcher-prod.fly.dev/privacy" }
 
 [webhooks]
 api_version = "2026-01"

@@ -20,5 +20,9 @@ export const AnalyticsService = {
 
   getHistoricalMatches: async (shop: string, days: number = 30) => {
     return AnalyticsDb.getHistoricalMatches(shop, days);
+  },
+
+  purgeOldEvents: async (days: number = 90): Promise<number> => {
+    return AnalyticsDb.purgeEvents(days);
   }
 };

@@ -23,7 +23,7 @@
     border-radius: 24px;
     background-color: var(--pp-trigger-bg);
     color: var(--pp-trigger-text);
-    display: flex;
+    display: none; /* Hidden until loaded and consent checked */
     align-items: center;
     justify-content: center;
     gap: 10px;
@@ -126,6 +126,14 @@
     font-size: {{ block.settings.text_size }}px;
   }
 
+  .pp-disclaimer {
+    font-size: 11px;
+    color: var(--pp-text-sub);
+    margin-top: 12px;
+    text-align: center;
+    line-height: 1.4;
+  }
+
   body.pp-modal-open {
     overflow: hidden;
   }
@@ -154,6 +162,23 @@
           </div>
         </div>
         
+        <!-- Consent View -->
+        <div id="pp-consent-view" class="pp-view" style="display: none;">
+          <div class="pp-welcome-card">
+            <div class="pp-welcome-content">
+              <div class="pp-welcome-icon">🛡️</div>
+              <h2 class="pp-welcome-title">Data Usage Agreement</h2>
+              <p class="pp-welcome-text">To provide personalized product matching for your pets, we need your consent to process your pet's name, breed, and other attributes.</p>
+              <div class="pp-form-actions" style="margin-top: 24px; justify-content: center;">
+                <button id="pp-agree-btn" class="pp-button pp-button--primary pp-button--large">
+                  I Agree to Data Usage
+                </button>
+              </div>
+              <p class="pp-disclaimer" style="margin-top: 16px;">You can opt-out at any time by deleting your pet profiles.</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Welcome View -->
         <div id="pp-welcome-view" class="pp-view" style="display: none;">
           <div class="pp-welcome-card">
@@ -264,6 +289,7 @@
                     Cancel
                   </button>
                 </div>
+                <p class="pp-disclaimer">By saving your pet, you agree to the processing of your pet's data for personalized product matching.</p>
               </form>
             </div>
           </div>

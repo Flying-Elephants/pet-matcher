@@ -56,20 +56,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if (actionType === "START_SYNC") {
     try {
+      console.log(`[ACTION:START_SYNC] Shop: ${session.shop}`);
       await ProductRuleService.syncProducts(admin);
       return data({ success: true, type: "START_SYNC", timestamp: Date.now() });
     } catch (error) {
+      console.error(`[ACTION:START_SYNC] Error:`, error);
       return { success: false, error: error instanceof Error ? error.message : "Failed to start sync" };
     }
   }
 
   if (actionType === "PROCESS_SYNC") {
     const url = formData.get("url") as string;
+    console.log(`[ACTION:PROCESS_SYNC] Shop: ${session.shop}, URL: ${url}`);
     if (!url) return { success: false, error: "No URL provided" };
     try {
       const count = await ProductRuleService.processSync(url, session.shop);
+      console.log(`[ACTION:PROCESS_SYNC] Success: Processed ${count} products`);
       return data({ success: true, processedCount: count, type: "PROCESS_SYNC", timestamp: Date.now() });
     } catch (error) {
+      console.error(`[ACTION:PROCESS_SYNC] Error:`, error);
+      // Return 401 specifically if that's what's happening to test the ErrorBoundary theory
+      if (error instanceof Error && error.message.includes("401")) {
+         throw new Response("Unauthorized from action", { status: 401 });
+      }
       return { success: false, error: error instanceof Error ? error.message : "Failed to process sync" };
     }
   }
@@ -159,14 +168,23 @@ export default function Welcome() {
         <Layout.Section>
           <Box paddingBlockEnd="500">
             <BlockStack gap="200" align="center">
-              <Box padding="400" background="bg-surface-info" borderRadius="full">
-                <Icon source={HeartIcon} tone="info" />
+              <Box padding="400">
+                <img
+                  src="/pmlogo.png"
+                  alt="Pet Matcher Logo"
+                  style={{
+                    width: '120px',
+                    height: 'auto',
+                    display: 'block',
+                    margin: '0 auto'
+                  }}
+                />
               </Box>
               <Text as="h1" variant="heading2xl" alignment="center">
-                Pet Matcher: Product & Breed Quiz
+                Pet Matcher: Product & Pet Match
               </Text>
               <Text as="p" variant="bodyLg" tone="subdued" alignment="center">
-                The perfect fit for every pet. Turn uncertainty into adoption.
+                The perfect fit for every pet. Turn uncertainty into confidence with personalized product recommendations.
               </Text>
             </BlockStack>
           </Box>

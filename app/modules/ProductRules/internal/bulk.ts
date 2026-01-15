@@ -107,8 +107,9 @@ export const BulkOperationService = {
     console.log(`Starting processing of bulk file: ${url}`);
     try {
         const response = await fetch(url);
+        console.log(`Fetch bulk file response status: ${response.status} ${response.statusText}`);
         if (!response.ok) {
-            throw new Error(`Failed to fetch bulk result: ${response.statusText}`);
+            throw new Error(`Failed to fetch bulk result: ${response.status} ${response.statusText}`);
         }
 
         const text = await response.text();

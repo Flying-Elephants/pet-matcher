@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:dev.sqlite"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Session {
@@ -34,11 +34,11 @@ model PetProfile {
   shop        String
   shopifyId   String   // ID of the customer in Shopify
   name        String
-  type        String   @default("Dog") // New field: 'Dog', 'Cat', etc.
+  type        String   @default("Dog") // 'Dog', 'Cat', etc.
   breed       String
   weightGram  Int?     // Stored in grams
-  birthday    DateTime? // For Lifecycle Marketing 
-  attributes  String   // SQLite doesn't support Json
+  birthday    DateTime? // For Lifecycle Marketing
+  attributes  String   // Encrypted, must stay as String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   isSelected  Boolean  @default(false)
@@ -52,7 +52,7 @@ model PetProfile {
 model PetProfileSettings {
   id          String   @id @default(uuid())
   shop        String   @unique
-  config      String   // JSON blob storing types and breeds tree
+  config      Json     @default("{}") // Migrated from String for PostgreSQL
   updatedAt   DateTime @updatedAt
 }
 
@@ -61,8 +61,8 @@ model ProductRule {
   shop        String
   name        String
   priority    Int      @default(0)
-  conditions  String   // SQLite doesn't support Json
-  productIds  String   // SQLite doesn't support Json (Array)
+  conditions  Json     @default("{}") // Migrated from String for PostgreSQL
+  productIds  Json     @default("[]") // Migrated from String for PostgreSQL
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -84,7 +84,7 @@ model Job {
   id          String   @id @default(uuid())
   type        String   // "BULK_SYNC", "EMAIL_BLAST"
   status      String   // "PENDING", "PROCESSING", "COMPLETED", "FAILED"
-  payload     String   // SQLite doesn't support Json
+  payload     Json     @default("{}") // Migrated from String for PostgreSQL
   createdAt   DateTime @default(now())
 }
 
@@ -97,4 +97,36 @@ model MatchEvent {
 
   @@index([shop])
   @@index([shop, createdAt])
+}
+
+model CustomerConsent {
+  id        String   @id @default(uuid())
+  shop      String
+  shopifyId String   // Shopify Customer ID
+  isAgreed  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@unique([shop, shopifyId])
+}
+
+// Track staff access to PII (Personal Identifiable Information)
+model AuditLog {
+  id          String   @id @default(uuid())
+  shop        String
+  userId      BigInt?  // Shopify Staff ID
+  userName    String?  // Staff Name
+  action      String   // e.g., "VIEW_PET_PROFILES_LIST", "VIEW_PET_PROFILE_DETAIL"
+  resourceId  String?  // The ID of the specific record accessed
+  createdAt   DateTime @default(now())
+
+  @@index([shop])
+  @@index([shop, createdAt])
+}
+
+// Security Configuration per Merchant
+model SecuritySettings {
+  id                        String   @id @default(uuid())
+  shop                      String   @unique
+  limitCollaboratorAccess   Boolean  @default(false) // Toggle to block Shopify Collaborator accounts
+  updatedAt                 DateTime @updatedAt
 }

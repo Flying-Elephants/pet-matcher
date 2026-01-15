@@ -1,5 +1,6 @@
 import db from "../../../db.server";
 import type { PetProfile, CreatePetProfileInput, UpdatePetProfileInput, PetSettings } from "../core/types";
+import { encrypt, decrypt } from "../../Core/encryption";
 
 export const PetProfileDb = {
   async findById(shop: string, id: string): Promise<PetProfile | null> {
@@ -9,7 +10,8 @@ export const PetProfileDb = {
     if (!profile) return null;
     return {
       ...profile,
-      attributes: JSON.parse(profile.attributes),
+      name: decrypt(profile.name),
+      attributes: JSON.parse(decrypt(profile.attributes)),
     } as PetProfile;
   },
 
@@ -19,7 +21,8 @@ export const PetProfileDb = {
     });
     return profiles.map((p) => ({
       ...p,
-      attributes: JSON.parse(p.attributes),
+      name: decrypt(p.name),
+      attributes: JSON.parse(decrypt(p.attributes)),
     })) as PetProfile[];
   },
 
@@ -57,7 +60,8 @@ export const PetProfileDb = {
     return {
       profiles: profiles.map((p) => ({
         ...p,
-        attributes: JSON.parse(p.attributes),
+        name: decrypt(p.name),
+        attributes: JSON.parse(decrypt(p.attributes)),
       })) as PetProfile[],
       totalCount
     };
@@ -68,19 +72,24 @@ export const PetProfileDb = {
       data: {
         ...data,
         shop,
-        attributes: JSON.stringify(data.attributes || {}),
+        name: encrypt(data.name),
+        attributes: encrypt(JSON.stringify(data.attributes || {})),
       },
     });
     return {
       ...profile,
-      attributes: JSON.parse(profile.attributes),
+      name: decrypt(profile.name),
+      attributes: JSON.parse(decrypt(profile.attributes)),
     } as PetProfile;
   },
 
   async update(shop: string, id: string, data: UpdatePetProfileInput): Promise<PetProfile> {
     const updateData: any = { ...data };
+    if (data.name) {
+      updateData.name = encrypt(data.name);
+    }
     if (data.attributes) {
-      updateData.attributes = JSON.stringify(data.attributes);
+      updateData.attributes = encrypt(JSON.stringify(data.attributes));
     }
 
     const profile = await db.petProfile.update({
@@ -89,7 +98,8 @@ export const PetProfileDb = {
     });
     return {
       ...profile,
-      attributes: JSON.parse(profile.attributes),
+      name: decrypt(profile.name),
+      attributes: JSON.parse(decrypt(profile.attributes)),
     } as PetProfile;
   },
 
@@ -134,7 +144,7 @@ export const PetProfileDb = {
       where: { shop }
     });
     if (!settings) return null;
-    return JSON.parse(settings.config);
+    return settings.config as unknown as PetSettings;
   },
 
   async upsertSettings(shop: string, settings: PetSettings): Promise<PetSettings> {
@@ -142,12 +152,41 @@ export const PetProfileDb = {
       where: { shop },
       create: {
         shop,
-        config: JSON.stringify(settings)
+        config: settings as any
       },
       update: {
-        config: JSON.stringify(settings)
+        config: settings as any
       }
     });
-    return JSON.parse(result.config);
+    return result.config as unknown as PetSettings;
+  },
+
+  // Consent
+  async getConsent(shop: string, shopifyId: string): Promise<boolean> {
+    const consent = await db.customerConsent.findUnique({
+      where: { shop_shopifyId: { shop, shopifyId } }
+    });
+    return consent?.isAgreed ?? false;
+  },
+
+  async setConsent(shop: string, shopifyId: string, isAgreed: boolean): Promise<void> {
+    await db.customerConsent.upsert({
+      where: { shop_shopifyId: { shop, shopifyId } },
+      create: { shop, shopifyId, isAgreed },
+      update: { isAgreed }
+    });
+  },
+
+  async purgeInactive(years: number): Promise<number> {
+    const cutoffDate = new Date();
+    cutoffDate.setFullYear(cutoffDate.getFullYear() - years);
+
+    const { count } = await db.petProfile.deleteMany({
+      where: {
+        updatedAt: { lt: cutoffDate }
+      }
+    });
+
+    return count;
   }
 };

@@ -61,7 +61,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   
   if (formData.get("_action") === "delete") {
     await ProductRuleService.deleteRule(session.shop, params.id!);
-    return redirect("/app/rules");
+    return redirect("/app/rules?revalidate=true");
   }
 
   const rawData = formData.get("rule");

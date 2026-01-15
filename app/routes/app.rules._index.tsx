@@ -19,6 +19,7 @@ import {
 } from "@shopify/polaris";
 import { InfoIcon } from "@shopify/polaris-icons";
 import { useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { authenticate } from "../shopify.server";
 import { ProductRuleService, type RuleSortKey } from "../modules/ProductRules";
 import { PetProfileService } from "../modules/PetProfiles";
@@ -27,6 +28,7 @@ import { PageGuide } from "../components/PageGuide";
 import { GUIDE_CONTENT } from "../modules/Core/guide-content";
 import { z } from "zod";
 import { SkeletonTablePage } from "../components/SkeletonTablePage";
+import { STAGGER_CONTAINER_VARIANTS, STAGGER_ITEM_VARIANTS, FADE_IN_VARIANTS } from "../modules/Core/animations";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -71,7 +73,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (_action === "delete") {
     const validatedId = z.string().min(1).parse(id);
     await ProductRuleService.deleteRule(session.shop, validatedId);
-    return redirect("/app/rules");
+    return redirect("/app/rules?revalidate=true");
   }
 
   if (_action === "bulk_delete") {
@@ -81,7 +83,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const parsedIds = JSON.parse(idsJson);
     const validatedIds = z.array(z.string()).min(1).parse(parsedIds);
     await ProductRuleService.deleteManyRules(session.shop, validatedIds);
-    return redirect("/app/rules");
+    return redirect("/app/rules?revalidate=true");
   }
 
   if (_action === "copy") {
@@ -303,64 +305,66 @@ export default function RulesIndex() {
       />
       <Layout>
         <Layout.Section>
-          <Card padding="0">
-            {rules.length === 0 && !query ? emptyStateMarkup : (
-              <BlockStack>
-                <IndexFilters
-                  queryValue={queryValue}
-                  queryPlaceholder="Search rules"
-                  onQueryChange={onHandleSearchChange}
-                  onQueryClear={onHandleSearchClear}
-                  cancelAction={{
-                    onAction: onHandleSearchClear,
-                    disabled: false,
-                    loading: false,
-                  }}
-                  tabs={[]}
-                  selected={0}
-                  onSelect={() => {}}
-                  canCreateNewView={false}
-                  filters={[]}
-                  onClearAll={() => {}}
-                  mode={mode}
-                  setMode={setMode}
-                />
-                <IndexTable
-                  resourceName={resourceName}
-                  itemCount={rules.length}
-                  selectedItemsCount={
-                    allResourcesSelected ? 'All' : selectedResources.length
-                  }
-                  onSelectionChange={handleSelectionChange}
-                  promotedBulkActions={promotedBulkActions}
-                  sortColumnIndex={['name', 'productCount', 'petTypeCount', 'breedCount', 'isActive', 'priority'].indexOf(sortKey)}
-                  sortDirection={sortDirection === 'asc' ? 'ascending' : 'descending'}
-                  onSort={handleSort}
-                  headings={[
-                    { title: 'Name' },
-                    { title: 'Products' },
-                    { title: 'Pet Types' },
-                    { title: 'Breeds' },
-                    { title: 'Weight' },
-                    { title: 'Status' },
-                    { title: 'Priority' },
-                    { title: 'Actions', alignment: 'end' },
-                  ]}
-                  sortable={[true, true, true, true, false, true, true, false]}
-                >
-                  {rowMarkup}
-                </IndexTable>
-                <div style={{ padding: '16px', display: 'flex', justifyContent: 'center', borderTop: '1px solid var(--p-border-subdued)' }}>
-                  <Pagination
-                    hasPrevious={hasPrevious}
-                    onPrevious={() => handlePagination(page - 1)}
-                    hasNext={hasNext}
-                    onNext={() => handlePagination(page + 1)}
+          <motion.div initial="hidden" animate="visible" variants={FADE_IN_VARIANTS}>
+            <Card padding="0">
+              {rules.length === 0 && !query ? emptyStateMarkup : (
+                <BlockStack>
+                  <IndexFilters
+                    queryValue={queryValue}
+                    queryPlaceholder="Search rules"
+                    onQueryChange={onHandleSearchChange}
+                    onQueryClear={onHandleSearchClear}
+                    cancelAction={{
+                      onAction: onHandleSearchClear,
+                      disabled: false,
+                      loading: false,
+                    }}
+                    tabs={[]}
+                    selected={0}
+                    onSelect={() => {}}
+                    canCreateNewView={false}
+                    filters={[]}
+                    onClearAll={() => {}}
+                    mode={mode}
+                    setMode={setMode}
                   />
-                </div>
-              </BlockStack>
-            )}
-          </Card>
+                  <IndexTable
+                    resourceName={resourceName}
+                    itemCount={rules.length}
+                    selectedItemsCount={
+                      allResourcesSelected ? 'All' : selectedResources.length
+                    }
+                    onSelectionChange={handleSelectionChange}
+                    promotedBulkActions={promotedBulkActions}
+                    sortColumnIndex={['name', 'productCount', 'petTypeCount', 'breedCount', 'isActive', 'priority'].indexOf(sortKey)}
+                    sortDirection={sortDirection === 'asc' ? 'ascending' : 'descending'}
+                    onSort={handleSort}
+                    headings={[
+                      { title: 'Name' },
+                      { title: 'Products' },
+                      { title: 'Pet Types' },
+                      { title: 'Breeds' },
+                      { title: 'Weight' },
+                      { title: 'Status' },
+                      { title: 'Priority' },
+                      { title: 'Actions', alignment: 'end' },
+                    ]}
+                    sortable={[true, true, true, true, false, true, true, false]}
+                  >
+                    {rowMarkup}
+                  </IndexTable>
+                  <div style={{ padding: '16px', display: 'flex', justifyContent: 'center', borderTop: '1px solid var(--p-border-subdued)' }}>
+                    <Pagination
+                      hasPrevious={hasPrevious}
+                      onPrevious={() => handlePagination(page - 1)}
+                      hasNext={hasNext}
+                      onNext={() => handlePagination(page + 1)}
+                    />
+                  </div>
+                </BlockStack>
+              )}
+            </Card>
+          </motion.div>
         </Layout.Section>
       </Layout>
 

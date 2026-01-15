@@ -89,5 +89,18 @@ export const AnalyticsDb = {
       date,
       matchCount,
     }));
+  },
+
+  async purgeEvents(days: number): Promise<number> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+
+    const { count } = await db.matchEvent.deleteMany({
+      where: {
+        createdAt: { lt: cutoffDate }
+      }
+    });
+
+    return count;
   }
 };

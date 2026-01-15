@@ -1,4 +1,5 @@
 import type { AdminApiContext } from "@shopify/shopify-app-react-router/server";
+import { MONTHLY_PLAN } from "../../../shopify.server";
 import { BillingDb } from "./db";
 import type { SubscriptionPlan } from "../core/types";
 
@@ -27,9 +28,17 @@ export const BillingShopify = {
   },
 
   async createSubscription(admin: AdminApiContext, planName: SubscriptionPlan, returnUrl: string) {
+    // If we are getting Managed Pricing error with appSubscriptionCreate,
+    // it strongly suggests Shopify is forcing the use of the new billing config in shopifyApp
+    // OR the app is in a state where API-based recurring charges are forbidden.
+    
+    // We will use appPurchaseOneTime as a test/fallback if recurring is blocked,
+    // but first let's try a different approach: appSubscriptionCreate without the custom name
+    // to see if it's a validation issue.
+    
     const mutation = `#graphql
-      mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!) {
-        appSubscriptionCreate(name: $name, lineItems: $lineItems, returnUrl: $returnUrl) {
+      mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
+        appSubscriptionCreate(name: $name, lineItems: $lineItems, returnUrl: $returnUrl, test: $test) {
           appSubscription {
             id
           }
@@ -42,18 +51,17 @@ export const BillingShopify = {
       }
     `;
 
-    const price = planName === "GROWTH" ? 19.0 : planName === "ENTERPRISE" ? 49.0 : 0.0;
+    const price = planName === "GROWTH" ? 9.99 : planName === "ENTERPRISE" ? 49.0 : 0.0;
 
     if (price === 0) {
-      // Logic for cancelling / moving to free would go here if Shopify allowed creating $0 subscriptions easily, 
-      // but usually we just cancel existing ones. For this implementation, we assume GROWTH/ENTERPRISE.
       throw new Error("Cannot create a paid subscription for FREE plan");
     }
 
     const response = await admin.graphql(mutation, {
       variables: {
-        name: planName,
+        name: planName, // Simple name
         returnUrl,
+        test: false,
         lineItems: [
           {
             plan: {
@@ -67,7 +75,13 @@ export const BillingShopify = {
       }
     });
 
-    const json = await response.json();
+    const json: any = await response.json();
+    
+    if (json.errors) {
+      console.error("GraphQL Errors:", JSON.stringify(json.errors, null, 2));
+      throw new Error(json.errors[0]?.message || "GraphQL Error");
+    }
+
     return json.data.appSubscriptionCreate;
   }
 };
