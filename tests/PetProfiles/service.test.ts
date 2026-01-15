@@ -10,6 +10,7 @@ vi.mock("../../app/modules/PetProfiles/internal/db", () => ({
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    setActiveProfile: vi.fn(),
   },
 }));
 
