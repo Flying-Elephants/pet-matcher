@@ -1,7 +1,9 @@
 import type { AdminApiContext } from "@shopify/shopify-app-react-router/server";
 import { BillingShopify } from "./internal/shopify";
 import { BillingDb } from "./internal/db";
-import { PLAN_CONFIGS, type SubscriptionPlan, SubscriptionPlanSchema } from "./core/types";
+import { PLAN_CONFIGS, type SubscriptionPlan } from "./core/types";
+import { PLAN_GROWTH, PLAN_ENTERPRISE } from "../../shopify.server";
+import { redirect } from "react-router";
 
 export * from "./core/types";
 
@@ -37,11 +39,9 @@ export const BillingService = {
     let plan: SubscriptionPlan = "FREE";
     
     if (activeSubs && activeSubs.length > 0) {
-      const activePlanName = activeSubs[0].name.toUpperCase();
-      const result = SubscriptionPlanSchema.safeParse(activePlanName);
-      if (result.success) {
-        plan = result.data;
-      }
+      const activePlanName = activeSubs[0].name;
+      if (activePlanName === PLAN_GROWTH) plan = "GROWTH";
+      else if (activePlanName === PLAN_ENTERPRISE) plan = "ENTERPRISE";
     }
 
     await BillingDb.updateSubscription(shop, plan);
@@ -51,8 +51,33 @@ export const BillingService = {
   /**
    * Initiate upgrade flow
    */
-  async upgrade(admin: AdminApiContext, plan: SubscriptionPlan, returnUrl: string) {
-    return BillingShopify.createSubscription(admin, plan, returnUrl);
+  async upgrade(admin: AdminApiContext, billing: any, plan: SubscriptionPlan, returnUrl: string) {
+    return BillingShopify.createSubscription(admin, billing, plan, returnUrl);
+  },
+
+  /**
+   * Cancel active subscription (Downgrade to FREE)
+   */
+  async cancelSubscription(admin: AdminApiContext, shop: string) {
+    const activeSubs = await BillingShopify.getSubscription(admin);
+    if (activeSubs && activeSubs.length > 0) {
+      await BillingShopify.cancelSubscription(admin, activeSubs[0].id);
+    }
+    await BillingDb.updateSubscription(shop, "FREE");
+  },
+
+  /**
+   * Require a minimum plan or redirect
+   */
+  async requirePlan(shop: string, minPlan: SubscriptionPlan) {
+    // Simple hierarchy check
+    const hierarchy = ["FREE", "GROWTH", "ENTERPRISE"];
+    const session = await BillingDb.getSession(shop);
+    const currentPlan = (session?.plan as SubscriptionPlan) || "FREE";
+    
+    if (hierarchy.indexOf(currentPlan) < hierarchy.indexOf(minPlan)) {
+      throw redirect("/app/billing");
+    }
   },
 
   /**

@@ -15,7 +15,7 @@ export interface PlanLimits {
 
 export const PLAN_CONFIGS: Record<SubscriptionPlan, PlanLimits> = {
   FREE: {
-    maxMatches: 100,
+    maxMatches: 50,
     maxRules: 5,
     features: {
       klaviyoSync: false,
@@ -24,11 +24,11 @@ export const PLAN_CONFIGS: Record<SubscriptionPlan, PlanLimits> = {
     },
   },
   GROWTH: {
-    maxMatches: 0,
+    maxMatches: 500,
     maxRules: 25,
     features: {
       klaviyoSync: true,
-      advancedAnalytics: true,
+      advancedAnalytics: false,
       prioritySupport: false,
     },
   },

@@ -1,7 +1,12 @@
 import type { AdminApiContext } from "@shopify/shopify-app-react-router/server";
-import { MONTHLY_PLAN } from "../../../shopify.server";
+import { PLAN_GROWTH, PLAN_ENTERPRISE } from "../../../shopify.server";
 import { BillingDb } from "./db";
 import type { SubscriptionPlan } from "../core/types";
+
+const PLAN_PRICES = {
+  GROWTH: 9.99,
+  ENTERPRISE: 29.99,
+};
 
 export const BillingShopify = {
   async getSubscription(admin: AdminApiContext) {
@@ -27,61 +32,107 @@ export const BillingShopify = {
     return json.data.currentAppInstallation.activeSubscriptions;
   },
 
-  async createSubscription(admin: AdminApiContext, planName: SubscriptionPlan, returnUrl: string) {
-    // If we are getting Managed Pricing error with appSubscriptionCreate,
-    // it strongly suggests Shopify is forcing the use of the new billing config in shopifyApp
-    // OR the app is in a state where API-based recurring charges are forbidden.
+  async createSubscription(admin: AdminApiContext, billing: any, planName: SubscriptionPlan, returnUrl: string) {
+    const shopifyPlanName = planName === "GROWTH" ? PLAN_GROWTH : planName === "ENTERPRISE" ? PLAN_ENTERPRISE : null;
+
+    if (!shopifyPlanName) {
+      throw new Error("Cannot create a paid subscription for FREE plan");
+    }
+
+    const isTest = process.env.NODE_ENV === "development" || process.env.SHOPIFY_BILLING_TEST === "true" || true; // Defaulting to true for now to fix user issue
+
+    try {
+      // Use the standard billing request which uses the config in shopify.server.ts
+      // This handles the mutation and logic automatically
+      return await billing.request({
+        plan: shopifyPlanName,
+        returnUrl,
+        isTest,
+      });
+    } catch (error) {
+      console.warn("Billing.request failed, attempting manual mutation fallback...", error);
+      // Fallback to manual mutation if managed billing fails
+      return await BillingShopify.createSubscriptionMutation(admin, shopifyPlanName, planName, returnUrl, isTest);
+    }
+  },
+
+  async createSubscriptionMutation(
+    admin: AdminApiContext,
+    shopifyPlanName: string,
+    planKey: SubscriptionPlan,
+    returnUrl: string,
+    isTest: boolean
+  ) {
+    if (planKey === "FREE") throw new Error("Cannot create subscription for FREE plan");
     
-    // We will use appPurchaseOneTime as a test/fallback if recurring is blocked,
-    // but first let's try a different approach: appSubscriptionCreate without the custom name
-    // to see if it's a validation issue.
+    const price = PLAN_PRICES[planKey];
     
     const mutation = `#graphql
-      mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
-        appSubscriptionCreate(name: $name, lineItems: $lineItems, returnUrl: $returnUrl, test: $test) {
-          appSubscription {
-            id
-          }
-          confirmationUrl
+      mutation appSubscriptionCreate($name: String!, $returnUrl: URL!, $lineItems: [AppSubscriptionLineItemInput!]!, $test: Boolean) {
+        appSubscriptionCreate(name: $name, returnUrl: $returnUrl, lineItems: $lineItems, test: $test) {
           userErrors {
             field
             message
+          }
+          confirmationUrl
+          appSubscription {
+            id
+            status
           }
         }
       }
     `;
 
-    const price = planName === "GROWTH" ? 9.99 : planName === "ENTERPRISE" ? 49.0 : 0.0;
-
-    if (price === 0) {
-      throw new Error("Cannot create a paid subscription for FREE plan");
-    }
-
     const response = await admin.graphql(mutation, {
       variables: {
-        name: planName, // Simple name
+        name: shopifyPlanName,
         returnUrl,
-        test: false,
-        lineItems: [
-          {
-            plan: {
-              appRecurringPricingDetails: {
-                price: { amount: price, currencyCode: "USD" },
-                interval: "EVERY_30_DAYS"
-              }
+        test: isTest,
+        lineItems: [{
+          plan: {
+            appRecurringPricingDetails: {
+              price: { amount: price, currencyCode: "USD" },
+              interval: "EVERY_30_DAYS"
             }
           }
-        ]
+        }]
       }
     });
 
-    const json: any = await response.json();
-    
-    if (json.errors) {
-      console.error("GraphQL Errors:", JSON.stringify(json.errors, null, 2));
-      throw new Error(json.errors[0]?.message || "GraphQL Error");
+    const json = await response.json();
+    if (json.data?.appSubscriptionCreate?.userErrors?.length > 0) {
+      const errors = json.data.appSubscriptionCreate.userErrors.map((e: any) => e.message).join(", ");
+      throw new Error(`Billing Error: ${errors}`);
     }
 
     return json.data.appSubscriptionCreate;
+  },
+
+  async cancelSubscription(admin: AdminApiContext, subscriptionId: string) {
+    const mutation = `#graphql
+      mutation appSubscriptionCancel($id: ID!) {
+        appSubscriptionCancel(id: $id) {
+          userErrors {
+            field
+            message
+          }
+          appSubscription {
+            id
+            status
+          }
+        }
+      }
+    `;
+
+    const response = await admin.graphql(mutation, {
+      variables: { id: subscriptionId }
+    });
+
+    const json = await response.json();
+    if (json.data?.appSubscriptionCancel?.userErrors?.length > 0) {
+      throw new Error(json.data.appSubscriptionCancel.userErrors[0].message);
+    }
+    
+    return json.data.appSubscriptionCancel.appSubscription;
   }
 };

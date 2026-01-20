@@ -394,6 +394,20 @@ export default function Dashboard() {
                             tone={billing.usage >= billing.limits.maxMatches ? "critical" : "primary"}
                           />
                         )}
+                        <Box paddingBlockStart="200">
+                           <InlineStack align="space-between">
+                            <Text as="p" variant="bodySm">Active Rules</Text>
+                            <Text as="p" variant="bodySm" tone="subdued">
+                              {`${analytics.activeRules} / ${billing.limits.maxRules}`}
+                            </Text>
+                          </InlineStack>
+                          <ProgressBar
+                            progress={Math.min((analytics.activeRules / billing.limits.maxRules) * 100, 100)}
+                            tone={analytics.activeRules >= billing.limits.maxRules ? "critical" : "primary"}
+                            size="small"
+                          />
+                        </Box>
+                        
                         <Button url="/app/billing" variant="tertiary" size="slim" icon={CashDollarIcon}>Manage Subscription</Button>
                       </BlockStack>
                     </BlockStack>
