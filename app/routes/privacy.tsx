@@ -43,7 +43,7 @@ export default function PrivacyPolicy() {
                 </Text>
                 <Box paddingInlineStart="400">
                   <List>
-                    <List.Item>Generating "Perfect Fit" product recommendations.</List.Item>
+                    <List.Item>Generating product recommendations.</List.Item>
                     <List.Item>Calculating weight-based product dosages or suitability.</List.Item>
                     <List.Item>Maintaining a history of pet profiles for returning customers.</List.Item>
                   </List>

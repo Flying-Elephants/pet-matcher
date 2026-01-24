@@ -168,7 +168,7 @@ export default function Dashboard() {
             <Layout.Section>
               <Banner
                 title="Upgrade your plan to unlock the Dashboard"
-                action={{ content: 'View Plans', onAction: () => navigate('/app/billing') }}
+                action={{ content: 'View Plans', url: '/app/billing' }}
                 tone="warning"
               >
                 <p>
@@ -188,7 +188,7 @@ export default function Dashboard() {
                           <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
                             Get deep insights into your pet-matching performance and unlock advanced rule management by upgrading your subscription.
                           </Text>
-                          <Button onClick={() => navigate("/app/billing")} variant="primary" size="large">Upgrade to Unlock</Button>
+                          <Button url="/app/billing" variant="primary" size="large">Upgrade to Unlock</Button>
                         </BlockStack>
                       </Box>
                   </BlockStack>
@@ -287,7 +287,7 @@ export default function Dashboard() {
             <motion.div variants={STAGGER_ITEM_VARIANTS}>
               <Card>
                 <BlockStack gap="400">
-                  <Text as="h2" variant="headingMd">Getting Started: The Perfect Fit</Text>
+                  <Text as="h2" variant="headingMd">Getting Started: Setup</Text>
                   <Grid columns={{ xs: 1, sm: 1, md: 3, lg: 3 }}>
                     <Box padding="300" background="bg-surface-secondary" borderRadius="200">
                       <BlockStack gap="200">
@@ -295,7 +295,7 @@ export default function Dashboard() {
                           <Icon source={ProductIcon} tone="base" />
                           {hasProducts ? <Badge tone="success">Synced</Badge> : <Badge tone="attention">Required</Badge>}
                         </InlineStack>
-                        <Text as="h3" variant="headingSm">1. Fit & Forget Sync</Text>
+                        <Text as="h3" variant="headingSm">1. Auto-Sync</Text>
                         <Text as="p" variant="bodySm" tone="subdued">Auto-syncs with your catalog using Bulk Operations.</Text>
                         {!hasProducts && <Button onClick={handleStartSync} size="slim" fullWidth>Start Sync</Button>}
                       </BlockStack>
@@ -306,7 +306,7 @@ export default function Dashboard() {
                           <Icon source={SettingsIcon} tone="base" />
                           <Badge tone="info">Step 2</Badge>
                         </InlineStack>
-                        <Text as="h3" variant="headingSm">2. Breed Logic</Text>
+                        <Text as="h3" variant="headingSm">2. Pet Types</Text>
                         <Text as="p" variant="bodySm" tone="subdued">Define attributes for smart recommendations.</Text>
                         <Button onClick={() => navigate("/app/pet-types")} size="slim" fullWidth>Manage Types</Button>
                       </BlockStack>
@@ -317,8 +317,8 @@ export default function Dashboard() {
                           <Icon source={PlusIcon} tone="base" />
                           {analytics.activeRules > 0 ? <Badge tone="success">Done</Badge> : <Badge tone="attention">Step 3</Badge>}
                         </InlineStack>
-                        <Text as="h3" variant="headingSm">3. Retention Engine</Text>
-                        <Text as="p" variant="bodySm" tone="subdued">Capture birthdays and link products to breeds.</Text>
+                        <Text as="h3" variant="headingSm">3. Matching Rules</Text>
+                        <Text as="p" variant="bodySm" tone="subdued">Create rules to link products to breeds.</Text>
                         <Button onClick={() => navigate("/app/rules/new")} size="slim" fullWidth variant="primary">Create Rule</Button>
                       </BlockStack>
                     </Box>
@@ -402,16 +402,16 @@ export default function Dashboard() {
                             </Text>
                           </InlineStack>
                           <ProgressBar
-                            progress={Math.min((analytics.activeRules / billing.limits.maxRules) * 100, 100)}
-                            tone={analytics.activeRules >= billing.limits.maxRules ? "critical" : "primary"}
-                            size="small"
-                          />
-                        </Box>
-                        
-                        <Button url="/app/billing" variant="tertiary" size="slim" icon={CashDollarIcon}>Manage Subscription</Button>
+                              progress={Math.min((analytics.activeRules / billing.limits.maxRules) * 100, 100)}
+                              tone={analytics.activeRules >= billing.limits.maxRules ? "critical" : "primary"}
+                              size="small"
+                            />
+                          </Box>
+                          
+                          <Button url="/app/billing" variant="tertiary" size="slim" icon={CashDollarIcon}>Manage Subscription</Button>
+                        </BlockStack>
                       </BlockStack>
-                    </BlockStack>
-                  </Card>
+                    </Card>
 
                   <Card>
                     <BlockStack gap="300">

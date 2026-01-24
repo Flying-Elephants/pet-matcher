@@ -99,10 +99,10 @@ export default function RulesIndex() {
   const navigation = useNavigation();
 
   if (navigation.state === "loading" && !data) {
-    return <SkeletonTablePage title="Logic Engine: Product Rules" />;
-  }
+  return <SkeletonTablePage title="Matching Rules" />;
+}
 
-  if (!data) return null;
+if (!data) return null;
   const { rules, totalCount, settings, sortKey, sortDirection, query, page, limit } = data;
   const [searchParams, setSearchParams] = useSearchParams();
   const [guideActive, setGuideActive] = useState(false);
@@ -170,11 +170,11 @@ export default function RulesIndex() {
 
   const emptyStateMarkup = (
     <EmptyState
-      heading="Create your first logic engine rule"
+      heading="Create your first matching rule"
       action={{ content: 'Create Rule', onAction: () => navigate('/app/rules/new') }}
       image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
     >
-      <p>The logic engine matches pets to products based on breed, weight, and age. Reduce returns and boost AOV.</p>
+      <p>The matching system connects pets to products based on breed, weight, and age. Reduce returns and boost AOV.</p>
     </EmptyState>
   );
 
@@ -288,7 +288,7 @@ export default function RulesIndex() {
 
   return (
     <Page
-      title="Logic Engine: Product Rules"
+      title="Matching Rules"
       primaryAction={{ content: 'Create Rule', onAction: () => navigate('/app/rules/new') }}
       secondaryActions={[
         {
@@ -371,7 +371,7 @@ export default function RulesIndex() {
       <Modal
         open={deleteModalActive}
         onClose={toggleDeleteModal}
-        title="Delete Logic Engine Rule?"
+        title="Delete Rule?"
         primaryAction={{
           content: 'Delete',
           onAction: handleConfirmDelete,

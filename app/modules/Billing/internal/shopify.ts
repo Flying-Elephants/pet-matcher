@@ -50,6 +50,13 @@ export const BillingShopify = {
         isTest,
       });
     } catch (error) {
+      if (error instanceof Response) {
+        const confirmationUrl = error.headers.get("X-Shopify-API-Request-Failure-Reauthorize-Url");
+        if (confirmationUrl) {
+          return { confirmationUrl };
+        }
+        throw error;
+      }
       console.warn("Billing.request failed, attempting manual mutation fallback...", error);
       // Fallback to manual mutation if managed billing fails
       return await BillingShopify.createSubscriptionMutation(admin, shopifyPlanName, planName, returnUrl, isTest);
@@ -63,12 +70,13 @@ export const BillingShopify = {
     returnUrl: string,
     isTest: boolean
   ) {
+    console.log("[BillingDebug] createSubscriptionMutation called", { shopifyPlanName, returnUrl, isTest });
     if (planKey === "FREE") throw new Error("Cannot create subscription for FREE plan");
     
     const price = PLAN_PRICES[planKey];
     
     const mutation = `#graphql
-      mutation appSubscriptionCreate($name: String!, $returnUrl: URL!, $lineItems: [AppSubscriptionLineItemInput!]!, $test: Boolean) {
+      mutation AppSubscriptionCreate($name: String!, $returnUrl: URL!, $lineItems: [AppSubscriptionLineItemInput!]!, $test: Boolean) {
         appSubscriptionCreate(name: $name, returnUrl: $returnUrl, lineItems: $lineItems, test: $test) {
           userErrors {
             field
@@ -86,12 +94,12 @@ export const BillingShopify = {
     const response = await admin.graphql(mutation, {
       variables: {
         name: shopifyPlanName,
-        returnUrl,
+        returnUrl: returnUrl,
         test: isTest,
         lineItems: [{
           plan: {
             appRecurringPricingDetails: {
-              price: { amount: price, currencyCode: "USD" },
+              price: { amount: price.toString(), currencyCode: "USD" },
               interval: "EVERY_30_DAYS"
             }
           }
@@ -100,8 +108,11 @@ export const BillingShopify = {
     });
 
     const json = await response.json();
+    console.log("[BillingDebug] createSubscriptionMutation response", JSON.stringify(json, null, 2));
+
     if (json.data?.appSubscriptionCreate?.userErrors?.length > 0) {
       const errors = json.data.appSubscriptionCreate.userErrors.map((e: any) => e.message).join(", ");
+      console.error("[BillingDebug] createSubscriptionMutation userErrors", errors);
       throw new Error(`Billing Error: ${errors}`);
     }
 
@@ -109,8 +120,9 @@ export const BillingShopify = {
   },
 
   async cancelSubscription(admin: AdminApiContext, subscriptionId: string) {
+    console.log("[BillingDebug] cancelSubscription called", { subscriptionId });
     const mutation = `#graphql
-      mutation appSubscriptionCancel($id: ID!) {
+      mutation AppSubscriptionCancel($id: ID!) {
         appSubscriptionCancel(id: $id) {
           userErrors {
             field
@@ -129,8 +141,12 @@ export const BillingShopify = {
     });
 
     const json = await response.json();
+    console.log("[BillingDebug] cancelSubscription response", JSON.stringify(json, null, 2));
+
     if (json.data?.appSubscriptionCancel?.userErrors?.length > 0) {
-      throw new Error(json.data.appSubscriptionCancel.userErrors[0].message);
+      const errorMsg = json.data.appSubscriptionCancel.userErrors[0].message;
+      console.error("[BillingDebug] cancelSubscription userErrors", errorMsg);
+      throw new Error(errorMsg);
     }
     
     return json.data.appSubscriptionCancel.appSubscription;

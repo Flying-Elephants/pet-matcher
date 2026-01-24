@@ -150,7 +150,7 @@ export default function PetProfilesAdmin() {
   const navigation = useNavigation();
 
   if (navigation.state === "loading" && !data) {
-    return <SkeletonTablePage title="Retention Center: Pet Profiles" />;
+    return <SkeletonTablePage title="Pet Profiles" />;
   }
 
   if (!data) return null;
@@ -291,7 +291,7 @@ export default function PetProfilesAdmin() {
 
   return (
     <Page
-      title="Retention Center: Pet Profiles"
+      title="Pet Profiles"
       secondaryActions={[
         {
           content: "Page Guide",
@@ -369,7 +369,7 @@ export default function PetProfilesAdmin() {
       <Modal
         open={deleteModalActive}
         onClose={toggleDeleteModal}
-        title="Delete Profile from Retention Center?"
+        title="Delete Profile?"
         primaryAction={{
           content: 'Delete',
           onAction: handleConfirmDelete,

@@ -13,9 +13,11 @@ compliance_urls = { privacy_policy_url = "https://pet-matcher-prod.fly.dev/priva
 [webhooks]
 api_version = "2026-01"
 
+
+
   [[webhooks.subscriptions]]
   topics = [ "products/delete", "products/update", "products/create" ]
-  uri = "/webhooks/privacy"
+  uri = "/webhooks/products"
 
   [[webhooks.subscriptions]]
   topics = [ "app/scopes_update" ]
@@ -29,12 +31,21 @@ api_version = "2026-01"
   topics = [ "app_subscriptions/update" ]
   uri = "/webhooks/app/subscription_update"
 
+[webhooks.privacy_compliance]
+customer_data_request_url = "https://pet-matcher-prod.fly.dev/webhooks/privacy"
+customer_redaction_url = "https://pet-matcher-prod.fly.dev/webhooks/privacy"
+shop_redaction_url = "https://pet-matcher-prod.fly.dev/webhooks/privacy"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_customers,read_products,write_customers,write_products"
 
 [auth]
-redirect_urls = [ "https://pet-matcher-prod.fly.dev/auth/callback" ]
+redirect_urls = [
+  "https://pet-matcher-prod.fly.dev/auth/callback",
+  "https://pet-matcher-prod.fly.dev/app/billing",
+  "https://pet-matcher-prod.fly.dev/app"
+]
 
 [app_proxy]
 url = "https://pet-matcher-prod.fly.dev/app"

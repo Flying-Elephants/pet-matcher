@@ -64,7 +64,7 @@ export default function PetTypesPage() {
   const navigation = useNavigation();
 
   if (navigation.state === "loading" && !data) {
-    return <SkeletonTablePage title="Breed Logic Configurator" />;
+    return <SkeletonTablePage title="Pet Types & Breeds" />;
   }
 
   if (!data) return null;
@@ -170,7 +170,7 @@ export default function PetTypesPage() {
 
   return (
     <Page
-      title="Breed Logic Configurator"
+      title="Pet Types & Breeds"
       primaryAction={{
         content: "Save Configuration",
         onAction: handleSave,
@@ -185,10 +185,10 @@ export default function PetTypesPage() {
           onAction: () => setGuideActive(true),
         },
         {
-          content: "New Breed Logic",
+          content: "New Pet Type",
           icon: PlusIcon,
           onAction: () => openModal(null),
-        }      
+        }
       ]}
     >
       <PageGuide 
@@ -203,11 +203,11 @@ export default function PetTypesPage() {
               <Card padding="0">
                 {types.length === 0 ? (
                   <EmptyState
-                    heading="No Breed Logic Configured"
-                    action={{ content: "New Breed Logic", onAction: () => openModal(null) }}
+                    heading="No Pet Types Configured"
+                    action={{ content: "New Pet Type", onAction: () => openModal(null) }}
                     image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
                   >
-                    <p>Configure smart breed logic (e.g. Dog, Cat) to power the Perfect Fit engine.</p>
+                    <p>Configure pet types (e.g. Dog, Cat) and their associated breeds.</p>
                   </EmptyState>
                 ) : (
                   <ResourceList
@@ -252,7 +252,7 @@ export default function PetTypesPage() {
       <Modal
         open={activeModal}
         onClose={closeModal}
-        title={editingType?.label ? `Edit ${editingType.label} Logic` : "New Breed Logic"}
+        title={editingType?.label ? `Edit ${editingType.label}` : "New Pet Type"}
         primaryAction={{
           content: "Done",
           onAction: handleModalSave,

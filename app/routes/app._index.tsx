@@ -166,6 +166,16 @@ export default function Welcome() {
     <Page>
       <Layout>
         <Layout.Section>
+          <Banner tone="info" title="Welcome to Open Beta!">
+            <p>
+              Pet Matcher is currently in Open Beta. Enjoy unlimited access to all features while we refine the platform.
+            </p>
+            <p style={{ marginTop: '8px' }}>
+              <strong>We need your help!</strong> Please report any bugs or share your feedback to help us shape future updates.
+            </p>
+          </Banner>
+        </Layout.Section>
+        <Layout.Section>
           <Box paddingBlockEnd="500">
             <BlockStack gap="200" align="center">
               <Box padding="400">
@@ -209,9 +219,9 @@ export default function Welcome() {
                     {isUpToDate ? <Badge tone="success" icon={CheckIcon}>Synced</Badge> : null}
                   </InlineStack>
                   <BlockStack gap="200">
-                    <Text as="h2" variant="headingMd">1. Fit & Forget Sync</Text>
+                    <Text as="h2" variant="headingMd">1. Auto-Sync</Text>
                     <Text as="p" variant="bodyMd" tone="subdued">
-                      Auto-syncs with your catalog using Bulk Operations. No manual updates needed.
+                      Automatically syncs with your catalog using Bulk Operations. No manual updates needed.
                     </Text>
                     {isSyncing && (
                       <Box paddingBlock="200">
@@ -256,9 +266,9 @@ export default function Welcome() {
                     <Icon source={SettingsIcon} tone="base" />
                   </Box>
                   <BlockStack gap="200">
-                    <Text as="h2" variant="headingMd">2. Breed Logic</Text>
+                    <Text as="h2" variant="headingMd">2. Breed Configuration</Text>
                     <Text as="p" variant="bodyMd" tone="subdued">
-                      Smart recommendations for 200+ breeds. The logic engine that knows pets.
+                      Smart recommendations for 200+ breeds. Configure pet types for accurate matching.
                     </Text>
                   </BlockStack>
                 </BlockStack>
@@ -278,9 +288,9 @@ export default function Welcome() {
                     <Icon source={PlusIcon} tone="base" />
                   </Box>
                   <BlockStack gap="200">
-                    <Text as="h2" variant="headingMd">3. Perfect Fit Guarantee</Text>
+                    <Text as="h2" variant="headingMd">3. Matching Rules</Text>
                     <Text as="p" variant="bodyMd" tone="subdued">
-                      Match pets to products based on breed, weight, and age. Reduce returns.
+                      Define rules to match products with specific pet attributes like breed and weight.
                     </Text>
                   </BlockStack>
                 </BlockStack>
@@ -324,11 +334,11 @@ export default function Welcome() {
                       </InlineStack>
                       <BlockStack gap="300">
                         <Box>
-                          <Text as="p" fontWeight="bold">Floating Profile Trigger</Text>
-                          <Text as="p" variant="bodySm" tone="subdued">A fixed action button that allows customers to create and switch between pet profiles from any page.</Text>
+                          <Text as="p" fontWeight="bold">Pet Profile Trigger</Text>
+                          <Text as="p" variant="bodySm" tone="subdued">A button that allows customers to create and switch between pet profiles from any page.</Text>
                         </Box>
                         <Box>
-                          <Text as="p" fontWeight="bold">Dynamic Product Badges</Text>
+                          <Text as="p" fontWeight="bold">Product Match Badges</Text>
                           <Text as="p" variant="bodySm" tone="subdued">Embedded on product pages, these badges show a "Match" or "No Match" status based on the active pet's attributes.</Text>
                         </Box>
                       </BlockStack>
@@ -339,16 +349,16 @@ export default function Welcome() {
                         <Box padding="100" background="bg-surface-success" borderRadius="100">
                           <Icon source={CheckIcon} tone="success" />
                         </Box>
-                        <Text as="h3" variant="headingMd">The Matching Engine</Text>
+                        <Text as="h3" variant="headingMd">The Matching System</Text>
                       </InlineStack>
                       <BlockStack gap="300">
                         <Box>
-                          <Text as="p" fontWeight="bold">Personalization Logic</Text>
-                          <Text as="p" variant="bodySm" tone="subdued">Our logic engine matches pets based on breed, weight, and age for the 'Perfect Fit'.</Text>
+                          <Text as="p" fontWeight="bold">Matching Logic</Text>
+                          <Text as="p" variant="bodySm" tone="subdued">Matches pets based on breed, weight, and age for accurate product recommendations.</Text>
                         </Box>
                         <Box>
-                          <Text as="p" fontWeight="bold">Retention Engine</Text>
-                          <Text as="p" variant="bodySm" tone="subdued">Capture birthdays and 'Gotcha Days' to power high-conversion marketing emails.</Text>
+                          <Text as="p" fontWeight="bold">Customer Retention</Text>
+                          <Text as="p" variant="bodySm" tone="subdued">Capture birthdays and 'Gotcha Days' to engage customers with timely offers.</Text>
                         </Box>
                       </BlockStack>
                     </BlockStack>

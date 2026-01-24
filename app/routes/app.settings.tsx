@@ -110,10 +110,10 @@ export default function Settings() {
             <motion.div variants={STAGGER_ITEM_VARIANTS}>
               <Card>
                 <BlockStack gap="400">
-                  <Text as="h2" variant="headingMd">Retention Engine: Profile Settings</Text>
+                  <Text as="h2" variant="headingMd">Profile Settings</Text>
                   <FormLayout>
                     <Select
-                      label="Weight Unit (for Perfect Fit Logic)"
+                      label="Weight Unit"
                       options={[
                         { label: "Kilograms (kg)", value: "kg" },
                         { label: "Pounds (lbs)", value: "lbs" },

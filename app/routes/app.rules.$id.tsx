@@ -121,9 +121,11 @@ export default function RuleDetail() {
   }, [settings.types, typeQuery]);
 
   const availableBreeds = useMemo(() => {
+    if (selectedTypes.length === 0) return [];
+    
     const query = breedQuery.toLowerCase();
     return settings.types
-      .filter((t: any) => selectedTypes.length === 0 || selectedTypes.includes(t.label))
+      .filter((t: any) => selectedTypes.includes(t.label))
       .flatMap((t: any) => t.breeds.map((b: any) => ({ type: t.label, breed: b })))
       .filter((item: any) =>
         item.breed.toLowerCase().includes(query) ||
@@ -215,10 +217,10 @@ export default function RuleDetail() {
 
   return (
     <Page
-      backAction={{ content: 'Logic Engine', onAction: () => navigate('/app/rules') }}
-      title={rule ? `Edit ${rule.name}` : "New Perfect Fit Rule"}
+      backAction={{ content: 'Rules', onAction: () => navigate('/app/rules') }}
+      title={rule ? `Edit ${rule.name}` : "New Matching Rule"}
       primaryAction={{
-        content: 'Save Logic',
+        content: 'Save Rule',
         onAction: handleSave,
         loading: isSaving
       }}
@@ -249,14 +251,14 @@ export default function RuleDetail() {
                   autoComplete="off" 
                   error={errors.name || (actionData?.error && (actionData.error.includes("name") || actionData.error.includes("required")) ? actionData.error : undefined)}
                 />
-                <TextField label="Logic Priority" type="number" value={priority} onChange={setPriority} autoComplete="off" helpText="Higher priority logic matches take precedence." />
+                <TextField label="Priority" type="number" value={priority} onChange={setPriority} autoComplete="off" helpText="Higher priority rules take precedence." />
                 <Checkbox label="Active" checked={isActive} onChange={setIsActive} />
               </BlockStack>
             </Card>
 
             <Card padding="400">
               <BlockStack gap="400">
-                <Text variant="headingMd" as="h2">Perfect Fit Logic</Text>
+                <Text variant="headingMd" as="h2">Matching Conditions</Text>
                 {errors.weight && (
                   <Banner tone="critical">
                     <p>{errors.weight}</p>
@@ -265,7 +267,7 @@ export default function RuleDetail() {
                 <InlineStack gap="500" align="start">
                   <Box width="200px">
                     <BlockStack gap="200">
-                      <Text variant="headingSm" as="h3">Breed Logic Types</Text>
+                      <Text variant="headingSm" as="h3">Pet Types</Text>
                       <TextField
                         label="Filter Types"
                         labelHidden
@@ -310,7 +312,11 @@ export default function RuleDetail() {
                       <Box padding="200" borderStyle="solid" borderWidth="025" borderColor="border" borderRadius="200">
                         <Scrollable style={{ height: '300px' }}>
                           <BlockStack gap="100">
-                            {availableBreeds.length === 0 ? (
+                            {selectedTypes.length === 0 ? (
+                              <Box padding="200">
+                                <Text as="p" tone="subdued" alignment="center">Select a pet type to view breeds.</Text>
+                              </Box>
+                            ) : availableBreeds.length === 0 ? (
                               <Box padding="200">
                                 <Text as="p" tone="subdued" alignment="center">No breeds found matching your filter.</Text>
                               </Box>

@@ -1,113 +1,75 @@
 import type { AdminApiContext } from "@shopify/shopify-app-react-router/server";
-import { BillingShopify } from "./internal/shopify";
-import { BillingDb } from "./internal/db";
 import { PLAN_CONFIGS, type SubscriptionPlan } from "./core/types";
-import { PLAN_GROWTH, PLAN_ENTERPRISE } from "../../shopify.server";
-import { redirect } from "react-router";
 
 export * from "./core/types";
 
 export const BillingService = {
   /**
-   * Get current subscription status from local DB + Shopify Sync
+   * Get current subscription status
+   * OPEN BETA: Always return ENTERPRISE equivalent
    */
   async getSubscriptionStatus(admin: AdminApiContext, shop: string) {
-    // 1. Get from local DB
-    let session = await BillingDb.getSession(shop);
-    
-    // 2. Fallback or initial sync
-    if (!session) {
-      throw new Error("Session not found");
-    }
-
-    const plan = (session.plan as SubscriptionPlan) || "FREE";
-    const limits = PLAN_CONFIGS[plan];
-
     return {
-      plan,
-      usage: session.matchCount,
-      limits,
+      plan: "ENTERPRISE" as SubscriptionPlan,
+      usage: 0,
+      limits: PLAN_CONFIGS["ENTERPRISE"],
     };
   },
 
   /**
    * Sync Shopify active subscription to local DB
+   * OPEN BETA: No-op
    */
   async syncSubscription(admin: AdminApiContext, shop: string): Promise<SubscriptionPlan> {
-    const activeSubs = await BillingShopify.getSubscription(admin);
-    
-    let plan: SubscriptionPlan = "FREE";
-    
-    if (activeSubs && activeSubs.length > 0) {
-      const activePlanName = activeSubs[0].name;
-      if (activePlanName === PLAN_GROWTH) plan = "GROWTH";
-      else if (activePlanName === PLAN_ENTERPRISE) plan = "ENTERPRISE";
-    }
-
-    await BillingDb.updateSubscription(shop, plan);
-    return plan;
+    return "FREE";
   },
 
   /**
    * Initiate upgrade flow
+   * OPEN BETA: No-op
    */
   async upgrade(admin: AdminApiContext, billing: any, plan: SubscriptionPlan, returnUrl: string) {
-    return BillingShopify.createSubscription(admin, billing, plan, returnUrl);
+    console.log("[Billing] Upgrade disabled in Open Beta");
+    return { confirmationUrl: null };
   },
 
   /**
-   * Cancel active subscription (Downgrade to FREE)
+   * Cancel active subscription
+   * OPEN BETA: No-op
    */
   async cancelSubscription(admin: AdminApiContext, shop: string) {
-    const activeSubs = await BillingShopify.getSubscription(admin);
-    if (activeSubs && activeSubs.length > 0) {
-      await BillingShopify.cancelSubscription(admin, activeSubs[0].id);
-    }
-    await BillingDb.updateSubscription(shop, "FREE");
+    console.log("[Billing] Cancel disabled in Open Beta");
   },
 
   /**
    * Require a minimum plan or redirect
+   * OPEN BETA: Always allow
    */
   async requirePlan(shop: string, minPlan: SubscriptionPlan) {
-    // Simple hierarchy check
-    const hierarchy = ["FREE", "GROWTH", "ENTERPRISE"];
-    const session = await BillingDb.getSession(shop);
-    const currentPlan = (session?.plan as SubscriptionPlan) || "FREE";
-    
-    if (hierarchy.indexOf(currentPlan) < hierarchy.indexOf(minPlan)) {
-      throw redirect("/app/billing");
-    }
+    return;
   },
 
   /**
    * Record a match event (usage tracking)
+   * OPEN BETA: No-op (or could track in DB if we wanted, but disabling for now to avoid confusion)
    */
   async recordMatch(shop: string) {
-    await BillingDb.incrementMatchCount(shop);
+    // Optional: could still track usage if needed, but strict billing is off.
   },
 
   /**
    * Check if a feature is allowed
+   * OPEN BETA: Always allow
    */
   async canUseFeature(shop: string, feature: keyof (typeof PLAN_CONFIGS)["FREE"]["features"]) {
-    const session = await BillingDb.getSession(shop);
-    const plan = (session?.plan as SubscriptionPlan) || "FREE";
-    const features = PLAN_CONFIGS[plan].features;
-    return features[feature];
+    return true;
   },
 
   /**
    * Check if usage limit is reached
+   * OPEN BETA: Always allow
    */
   async isUnderLimit(shop: string) {
-    const session = await BillingDb.getSession(shop);
-    if (!session) return false;
-
-    const plan = (session.plan as SubscriptionPlan) || "FREE";
-    const limits = PLAN_CONFIGS[plan];
-
-    if (limits.maxMatches === 0) return true; // Unlimited
-    return session.matchCount < limits.maxMatches;
+    return true;
   }
 };

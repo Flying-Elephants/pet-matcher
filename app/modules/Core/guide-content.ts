@@ -5,12 +5,12 @@ export const GUIDE_CONTENT: Record<string, GuideContent> = {
     title: "Pet Matcher: Product & Breed Quiz",
     sections: [
       {
-        heading: "The Perfect Fit",
-        content: "Turn uncertainty into adoption with the 'Perfect Fit' guarantee. Match pets to products based on breed, weight, and age.",
+        heading: "Product Matching",
+        content: "Turn uncertainty into sales with the product matching system. Match pets to products based on breed, weight, and age.",
       },
       {
-        heading: "Fit & Forget Sync",
-        content: "Our logic engine auto-syncs with your catalog using Bulk Operations to ensure recommendations are always up-to-date.",
+        heading: "Auto-Sync",
+        content: "Our system automatically syncs with your catalog using Bulk Operations to ensure recommendations are always up-to-date.",
       },
     ],
   },
@@ -37,15 +37,15 @@ export const GUIDE_CONTENT: Record<string, GuideContent> = {
     ],
   },
   rules: {
-    title: "Logic Engine: Product Rules",
+    title: "Matching Rules",
     sections: [
       {
-        heading: "Smart Breed Logic",
+        heading: "Smart Breed Matching",
         content: "Create rules that match products to 200+ breeds, specific weights, and age ranges to boost AOV.",
       },
       {
-        heading: "Fit Guarantee",
-        content: "Ensure every customer finds the perfect match, reducing returns and building trust.",
+        heading: "Accurate Matching",
+        content: "Ensure every customer finds the right product, reducing returns and building trust.",
       },
     ],
   },
@@ -59,7 +59,7 @@ export const GUIDE_CONTENT: Record<string, GuideContent> = {
     ],
   },
   petProfiles: {
-    title: "Retention Engine: Pet Profiles",
+    title: "Pet Profile System",
     sections: [
       {
         heading: "Birthday Marketing",
