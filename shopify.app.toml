@@ -2,13 +2,13 @@
 
 client_id = "13df7349b52e680367f9843ce7f2be32"
 name = "Pet Matcher: Product Match"
-application_url = "https://pet-matcher-prod.fly.dev"
+application_url = "https://pet-matcher-773884090352.europe-west1.run.app"
 embedded = true
 
 [build]
 automatically_update_urls_on_dev = true
 
-compliance_urls = { privacy_policy_url = "https://pet-matcher-prod.fly.dev/privacy" }
+compliance_urls = { privacy_policy_url = "https://pet-matcher-773884090352.europe-west1.run.app/privacy" }
 
 [webhooks]
 api_version = "2026-01"
@@ -41,12 +41,12 @@ scopes = "read_customers,read_products,write_customers,write_products"
 
 [auth]
 redirect_urls = [
-  "https://pet-matcher-prod.fly.dev/auth/callback",
-  "https://pet-matcher-prod.fly.dev/app/billing",
-  "https://pet-matcher-prod.fly.dev/app"
+  "https://pet-matcher-773884090352.europe-west1.run.app/auth/callback",
+  "https://pet-matcher-773884090352.europe-west1.run.app/app/billing",
+  "https://pet-matcher-773884090352.europe-west1.run.app/app"
 ]
 
 [app_proxy]
-url = "https://pet-matcher-prod.fly.dev/app"
+url = "https://pet-matcher-773884090352.europe-west1.run.app/app"
 subpath = "pet-matcher-final"
 prefix = "apps"
