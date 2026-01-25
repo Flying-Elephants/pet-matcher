@@ -125,6 +125,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (customerId) {
     fetchProfiles();
+  } else {
+    // Show trigger for guests to allow login prompt
+    if (modal.trigger) modal.trigger.style.display = 'flex';
   }
 
   // --- Event Listeners ---

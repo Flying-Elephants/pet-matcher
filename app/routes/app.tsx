@@ -42,6 +42,7 @@ export default function App() {
       <PolarisProvider i18n={enTranslations} linkComponent={PolarisLink}>
         <ui-nav-menu>
           <a href="/app" rel="home">Home</a>
+          <a href="/app/guide">Setup Guide</a>
           <a href="/app/dashboard">Dashboard</a>
           <a href="/app/pet-types">Pet Types</a>
           <a href="/app/pet-profiles-admin">Pet Profiles</a>
